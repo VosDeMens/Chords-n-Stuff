@@ -2,11 +2,9 @@ on:
   push:
     branches:
       - main
-      - features/github-PR-validation-workflow
   pull_request:
     branches:
       - main
-      - features/github-PR-validation-workflow
     types:
       - opened
       - reopened
