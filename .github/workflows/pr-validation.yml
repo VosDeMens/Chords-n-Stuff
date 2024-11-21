@@ -32,4 +32,5 @@ jobs:
       - name: Run unit tests
         run: python -m tests.util_test
       # Linter & formatter to check code quality
-      - uses: astral-sh/ruff-action@v1
+      - name: Run linter to check code quality
+        uses: astral-sh/ruff-action@v1
