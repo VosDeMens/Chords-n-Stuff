@@ -12,3 +12,6 @@ class UtilTests(unittest.TestCase):
         self.assertCountEqual(
             abc_bca_cab, [("a", "b", "c"), ("b", "c", "a"), ("c", "a", "b")]
         )
+
+if __name__ == '__main__':
+    unittest.main()
