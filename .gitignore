@@ -1,6 +1,5 @@
 .vscode/
 .DS_Store
-redundant/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
