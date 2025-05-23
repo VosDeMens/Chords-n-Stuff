@@ -1,10 +1,9 @@
 from functools import cache
-from typing import Iterable
+from typing import Iterable, overload
 
 from src.cum_pattern import CumPattern
-from src.note import PitchClass
+from src.pitch_class import PitchClass
 from src.pattern import Pattern
-from src.util import get_inner_intervals
 
 
 class Combination:
@@ -49,12 +48,24 @@ class Combination:
     def __len__(self) -> int:
         return len(self.pcs)
 
+    @overload
     def __add__(self, other: "Combination") -> "Combination":
         """Adds together two `Combination`s, by taking the union of the sets they represent.
 
         The new `Combination` does not have a root.
         """
-        return Combination(self.pcs | other.pcs)
+        ...
+
+    @overload
+    def __add__(self, other: PitchClass) -> "Combination":
+        """Returns a new `Combination` with the `PitchClass`es in self, together with `other`."""
+        ...
+
+    def __add__(self, other: "Combination | PitchClass") -> "Combination":
+        if isinstance(other, Combination):
+            return Combination(self.pcs | other.pcs)
+        else:  # Note
+            return Combination([other, *self.pcs])
 
     def match(self, cum: CumPattern) -> list[PitchClass]:
         """Finds all of the roots from which `cum` could be built using the notes in `self`.
@@ -88,4 +99,4 @@ class Combination:
 
 @cache
 def _combination_to_pattern(combination: Combination) -> Pattern:
-    return Pattern(get_inner_intervals(tuple(pc.value for pc in combination.pcs)))
+    return Pattern.from_intervals_from_root(tuple(pc.value for pc in combination.pcs))

@@ -5,7 +5,7 @@ from sounddevice import play as play_recording  # type: ignore
 from src.audio_io import record
 from src.audio_to_notes import extract_note_sequence
 from src.constants import SAMPLE_RATE
-from midi_driver_interface import peep, play_melody, poop
+from src.midi_driver_interface import peep, play_melody, poop
 from src.metrics.diatonic_local import DiatonicLocal
 from src.metrics.internal_interval_range import InternalIntervalRange
 from src.metrics.no_combination_reps import NoCombinationReps
@@ -41,7 +41,7 @@ class GuitarPractice:
         self.no_combination_reps = NoCombinationReps(3, 3)
         self.diatonic_local = DiatonicLocal(2, 2)
         self.legal_ranges = LegalRanges(self.string_ranges)
-        self.pattern_rules = LegalPatterns([MARY, MINNY])
+        self.legal_patterns = LegalPatterns([MARY, MINNY])
         self.internal_interval_range = InternalIntervalRange(3, 5)
 
         self.start_voicing = DEFAULT_START
@@ -52,7 +52,7 @@ class GuitarPractice:
                 self.no_dup_notes,
                 self.internal_interval_range,
                 self.legal_ranges,
-                self.pattern_rules,
+                self.legal_patterns,
                 self.no_combination_reps,
                 self.diatonic_local,
             ],
@@ -89,7 +89,9 @@ class GuitarPractice:
             Score, based on how well the player did (between 1 and 10).
         """
         self.engine.reset(self.start_voicing)
+        print(f"{self.engine.history = }")
         self.nr_of_chords_per_round = nr_of_chords_per_round
+        print(f"{self.nr_of_chords_per_round = }")
         self.attempts_count = 0
         prev = self.start_voicing
         voicings_or_none: list[Voicing | None] = []
@@ -99,6 +101,8 @@ class GuitarPractice:
             voicings_or_none = [
                 self.engine.get_next() for _ in range(nr_of_chords_per_round - 1)
             ]
+            print(f"{prev = }")
+            print(f"{voicings_or_none = }")
             if None in voicings_or_none:
                 print("cul-de-sac")
                 break
@@ -170,7 +174,7 @@ class GuitarPractice:
         ]
 
         corrects = [
-            voicing.notes == rec_notes
+            voicing.notes == tuple(rec_notes)
             for voicing, rec_notes in zip(voicings, notes_per_recording)
         ]
         for correct in corrects:

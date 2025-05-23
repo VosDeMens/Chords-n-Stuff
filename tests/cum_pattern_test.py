@@ -1,17 +1,28 @@
 import unittest
 
+from src.pattern import *
 from src.cum_pattern import *
 from src.shape import Shape
 
 
 class CumPatternTest(unittest.TestCase):
-    def test_cum_pattern_to_pattern(self):
-        # create
-        sus2_pattern = SUS2.pattern
-        sus4_pattern = SUS4.pattern
-        maj_octaved_pattern = Shape([0, 7, 16]).pattern
+    def test_to_pattern(self):
+        self.assertEqual(SUS2.pattern, SUZY)
+        self.assertEqual(SUS4.pattern, SUZY)
+        self.assertEqual(Shape([0, 7, 16]).pattern, MARY)
 
-        # check
-        self.assertEqual(sus2_pattern.intervals, (2, 5, 5))
-        self.assertEqual(sus4_pattern.intervals, (2, 5, 5))
-        self.assertEqual(maj_octaved_pattern.intervals, (3, 5, 4))
+    def test_addition(self):
+        self.assertEqual(SUS2 + SUS4, SUS2 + 5)
+        self.assertEqual(SUS2 + SUS4, SUS4 + 2)
+        self.assertEqual(SUS2 + SUS4, SUS2SUS4)
+        self.assertEqual(MAJOR + MINOR, MINOR + 4)
+        self.assertEqual(MAJOR + MINOR, MAJOR + 3)
+        self.assertEqual(MAJOR + MINOR, CumPattern((0, 3, 4, 7)))
+
+    def test_shift(self):
+        self.assertEqual(SUS2 >> 2, SUS4)
+        self.assertEqual(SUS2 << 1, SUS4)
+        self.assertEqual(SUS2 << -2, SUS4)
+
+    def test_equal(self):
+        self.assertNotEqual(MAJOR, MINOR)

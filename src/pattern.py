@@ -1,5 +1,5 @@
 from functools import cache
-from typing import Sequence
+from typing import Iterable, Sequence
 from numpy import cumsum
 
 from src.util import (
@@ -21,19 +21,33 @@ class Pattern:
         assert (
             sum(intervals) % 12 == 0
         ), f"Intervals should sum to 0 (mod 12), {intervals = }"
-        intervals_reduced = reduce_intervals(tuple(intervals))
-        self.intervals: tuple[int, ...] = get_minimal_rotation(intervals_reduced)
+        intervals_reduced = reduce_inner_intervals(tuple(intervals))
+        self.normal_form: tuple[int, ...] = get_minimal_rotation(intervals_reduced)
+
+    @classmethod
+    def from_intervals_from_root(cls, intervals_from_root: Iterable[int]) -> "Pattern":
+        self = cls.__new__(cls)
+        self.normal_form = get_normal_form(intervals_from_root)
+        return self
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Pattern):
             return False
-        return self.intervals == other.intervals
+        return self.normal_form == other.normal_form
 
     def __hash__(self) -> int:
-        return hash(tuple(self.intervals))
+        return hash(tuple(self.normal_form))
 
     def __len__(self) -> int:
-        return len(self.intervals)
+        return len(self.normal_form)
+
+    def __str__(self) -> str:
+        if self in PATTERN_NAMES:
+            return PATTERN_NAMES[self]
+        return f"Pattern(Intervals: {self.normal_form})"
+
+    def __repr__(self) -> str:
+        return str(self)
 
     def __contains__(self, other: "Pattern") -> bool:
         """
@@ -49,16 +63,16 @@ class Pattern:
         False
         """
         for shift in range(len(self)):
-            rotated_intervals = rotate_by(self.intervals, shift)
+            rotated_intervals = rotate_by(self.normal_form, shift)
 
-            if _matches(other.intervals, rotated_intervals):
+            if _matches(other.normal_form, rotated_intervals):
                 return True
         return False
 
 
 @cache
-def reduce_intervals(inner_intervals: Sequence[int]) -> tuple[int, ...]:
-    """Reduces a `Sequence` of intervals to the normal form for a `Pattern`.
+def reduce_inner_intervals(inner_intervals: Sequence[int]) -> tuple[int, ...]:
+    """Reduces a `Sequence` of intervals to sum to 12.
 
     Parameters
     ----------
@@ -72,19 +86,37 @@ def reduce_intervals(inner_intervals: Sequence[int]) -> tuple[int, ...]:
 
     Examples
     --------
-    >>> reduce_intervals([4, 3, 5])
-    (3, 5, 4)
+    >>> reduce_intervals((4, 3, 5))
+    (4, 3, 5)
 
     >>> reduce_intervals([10, 10, 4])
-    (2, 5, 5)
+    (8, 2, 2)
     """
     assert (
         sum(inner_intervals) % 12 == 0
-    ), f"{inner_intervals = } should sum to 12 but sum to {sum(inner_intervals)}"
-    cum = [int(d) for d in cumsum(inner_intervals)]
-    cum_reduced = [d % 12 for d in cum]
-    cum_sorted = tuple(sorted(cum_reduced))
-    return get_inner_intervals(cum_sorted)
+    ), f"{inner_intervals = } should sum to 0 mod 12 but sum to {sum(inner_intervals)} mod 12"
+    intervals_from_roots = tuple(int(d) for d in cumsum(inner_intervals))
+    return get_normal_form(intervals_from_roots)
+
+
+@cache
+def get_normal_form(
+    intervals_from_root: Iterable[int],
+) -> tuple[int, ...]:
+    intervals_from_root = set(intervals_from_root)
+    if not intervals_from_root:
+        return ()
+    if len(intervals_from_root) == 1:
+        return (12,)
+    reduced = [d % 12 for d in intervals_from_root]
+    reduced_sorted = tuple(sorted(reduced))
+    inner_intervals = get_inner_intervals(reduced_sorted)
+    inner_intervals_wrapped_around: tuple[int, ...] = (
+        *inner_intervals,
+        (reduced_sorted[0] - reduced_sorted[-1]) % 12,
+    )
+    normal_form: tuple[int, ...] = get_minimal_rotation(inner_intervals_wrapped_around)
+    return normal_form
 
 
 @cache
@@ -137,3 +169,12 @@ SUZY = Pattern([2, 5, 5])
 DIMMY = Pattern([3, 3, 6])
 AUGY = Pattern([4, 4, 4])
 JIMMY = Pattern([6, 5, 1])
+
+PATTERN_NAMES = {
+    MARY: "Mary",
+    MINNY: "Minny",
+    SUZY: "Suzy",
+    DIMMY: "Dimmy",
+    AUGY: "Augy",
+    JIMMY: "Jimmy",
+}

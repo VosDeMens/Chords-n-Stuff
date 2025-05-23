@@ -1,7 +1,6 @@
 from typing import Iterable
 
 from src.pattern import Pattern
-from src.util import get_inner_intervals
 
 
 class CumPattern:
@@ -20,7 +19,7 @@ class CumPattern:
 
     @property
     def pattern(self) -> Pattern:
-        return Pattern(get_inner_intervals(self.intervals_from_root))
+        return Pattern.from_intervals_from_root(self)
 
     def __add__(self, other: "int | CumPattern") -> "CumPattern":
         """Adds an individual interval, or all intervals from another `CumPattern`.
@@ -87,6 +86,14 @@ class CumPattern:
             Shifted result.
         """
         return self >> -i
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, CumPattern):
+            return False
+        return self.intervals_from_root == other.intervals_from_root
+
+    def __hash__(self) -> int:
+        return hash(self.intervals_from_root)
 
 
 MAJOR = CumPattern([0, 4, 7])

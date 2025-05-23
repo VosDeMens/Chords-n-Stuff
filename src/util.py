@@ -52,14 +52,11 @@ def get_inner_intervals(dists_from_root: Sequence[int]) -> tuple[int, ...]:
     Examples
     --------
     >>> get_inner_intervals((0, 4, 7))
-    (4, 3, 5)
+    (4, 3)
     """
     if not dists_from_root:
         return tuple()
-    dists_from_root = sorted(dists_from_root)
-    return tuple(b - a for a, b in pairwise(dists_from_root)) + (
-        (dists_from_root[0] - dists_from_root[-1]) % 12,
-    )
+    return tuple(b - a for a, b in pairwise(dists_from_root))
 
 
 def weighted_pick(options: dict[T, float]) -> T:

@@ -2,22 +2,19 @@ from typing import Iterable
 
 from src.cum_pattern import CumPattern
 from src.pattern import Pattern
-from src.util import get_inner_intervals
 
 
 class Shape:
-    """A `Shape` represents a chord shape, as a `tuple` of intervals from an arbitrary root.
+    """A `Shape` represents a chord shape, as a `set` of intervals from an arbitrary root.
     Can't contain duplicates. CAN contain negative intervals.
     """
 
     def __init__(self, intervals_from_root: Iterable[int]):
-        self.intervals_from_root: tuple[int, ...] = tuple(
-            sorted(set(intervals_from_root))
-        )
+        self.intervals_from_root: set[int] = set(intervals_from_root)
 
     @property
     def pattern(self) -> Pattern:
-        return Pattern(get_inner_intervals(self.intervals_from_root))
+        return Pattern.from_intervals_from_root(self)
 
     @property
     def cum_pattern(self) -> CumPattern:
@@ -39,9 +36,9 @@ class Shape:
             The resulting `Shape`.
         """
         if isinstance(other, int):
-            return Shape(self.intervals_from_root + (other,))
+            return Shape((*self.intervals_from_root, other))
         else:  # if isinstance(other, Shape)
-            return Shape(self.intervals_from_root + other.intervals_from_root)
+            return Shape((*self.intervals_from_root, *other.intervals_from_root))
 
     def __iter__(self):
         return iter(self.intervals_from_root)
@@ -49,11 +46,16 @@ class Shape:
     def __len__(self):
         return len(self.intervals_from_root)
 
-    def __getitem__(self, i: int):
-        return self.intervals_from_root[i]
-
     def __str__(self):
         return f"Shape({self.intervals_from_root})"
 
     def __repr__(self):
         return str(self)
+
+    def __eq__(self, other: object):
+        if not isinstance(other, Shape):
+            return False
+        return self.intervals_from_root == other.intervals_from_root
+
+    def __hash__(self) -> int:
+        return hash(tuple(sorted(self.intervals_from_root)))
