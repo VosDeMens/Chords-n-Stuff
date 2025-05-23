@@ -9,8 +9,19 @@ from src.combination import Combination
 
 
 class Voicing:
+    """A `Voicing` represents a set of specific `Note`s.
+    `Voicing`s are ordered and can contain duplicate notes.
+    It is the least abstract way to represent a chord or scale.
+
+    For example these are all distinct:
+    >>> Voicing([C3, E3, G3])
+    >>> Voicing([C4, E4, G4])
+    >>> Voicing([E3, C4, G4])
+    >>> Voicing([C4, G4, E4])
+    """
+
     def __init__(self, notes: Sequence[Note], root: PitchClass | None = None) -> None:
-        self.notes = list(notes)
+        self.notes = tuple(notes)
         self.root = root
 
     def __iter__(self):
@@ -24,9 +35,9 @@ class Voicing:
 
     def __add__(self, other: Note | int) -> "Voicing":
         if isinstance(other, Note):
-            return Voicing(self.notes + [other])
+            return Voicing(self.notes + (other,))
         else:  # int
-            return Voicing([note + other for note in self])
+            return Voicing(tuple(note + other for note in self))
 
     def __sub__(self, other: int) -> "Voicing":
         return self + (-other)

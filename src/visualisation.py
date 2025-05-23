@@ -17,6 +17,33 @@ def plot(
     red_lines: list[float] | None = None,
     green_lines: list[float] | list[int] | None = None,
 ) -> None:
+    """Wrapper for pyplot linechart, which is actually able to just plot something in one line.
+
+    matplotlib why you gotta be like this.
+
+    Parameters
+    ----------
+    y : Any
+        Data to plot
+    x : Any, optional
+        To plot against, by default None
+    title : str, optional
+        Title of the plot, by default "line chart"
+    xlabel : str, optional
+        Label of the X axis, by default "X"
+    ylabel : str, optional
+        Label of the Y axis, by default "Y"
+    ylimit : float | None, optional
+        Max value on the Y axis, by default just above max(Y)
+    xrange : tuple[float, float] | None, optional
+        Range of the X axis, by default just arounf min(X) and max(X)
+    figure : Figure | None, optional
+        Existing `Figure` to add to, by default None for a fresh `Figure`
+    red_lines : list[float] | None, optional
+        X values for which to plot red vertical dashed lines, by default []
+    green_lines : list[float] | list[int] | None, optional
+        X values for which to plot green vertical dashed lines, by default []
+    """
     if x is None:
         x = np.arange(len(y))
     if figure is None:

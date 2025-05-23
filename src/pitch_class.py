@@ -2,11 +2,24 @@ from typing import overload
 
 
 class PitchClass:
+    """A `PitchClass` represents a class of notes that are spaced apart by octaves.
+
+    The concept of C can be expressed as a `PitchClass`.
+    """
+
     def __init__(self, value: int):
         self._value = value % 12
 
     @classmethod
     def from_str(cls, s: str) -> "PitchClass":
+        """
+        Examples
+        --------
+        >>> PitchClass("C#")
+        Cs
+
+        Can't use the # symbol in variable names, but it's used in string representations.
+        """
         return PC_NAMES_REV[s]
 
     @property
@@ -20,13 +33,39 @@ class PitchClass:
         return str(self)
 
     def __add__(self, other: int) -> "PitchClass":
+        """
+        Examples
+        --------
+        >>> C + 2
+        D
+        """
         return PitchClass(self._value + other)
 
     @overload
-    def __sub__(self, other: "PitchClass") -> int: ...
+    def __sub__(self, other: "PitchClass") -> int:
+        """
+        Examples
+        --------
+        >>> D - C
+        2
+
+        >>> C - D
+        10
+        """
+        ...
 
     @overload
-    def __sub__(self, other: int) -> "PitchClass": ...
+    def __sub__(self, other: int) -> "PitchClass":
+        """
+        Examples
+        --------
+        >>> D - 2
+        C
+
+        >>> C - 10
+        D
+        """
+        ...
 
     def __sub__(self, other: "PitchClass | int") -> "PitchClass | int":
         if isinstance(other, PitchClass):
@@ -78,4 +117,14 @@ PC_NAMES = {
     B: "B",
 }
 
-PC_NAMES_REV = {v: k for k, v in PC_NAMES.items()}
+ALTERNATIVE_PC_NAMES = {
+    Cs: "C#",
+    Ds: "D#",
+    Gf: "Gb",
+    Gs: "G#",
+    As: "A#",
+}
+
+PC_NAMES_REV = {
+    v: k for k, v in tuple(PC_NAMES.items()) + tuple(ALTERNATIVE_PC_NAMES.items())
+}

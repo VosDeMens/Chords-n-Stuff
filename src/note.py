@@ -7,6 +7,8 @@ from src.pitch_class import PitchClass
 
 
 class Note:
+    """A `Note` represents one specific pitch, like C4."""
+
     def __init__(self, value: int):
         if value < 0:
             raise ValueError("Note must be positive")
@@ -14,26 +16,51 @@ class Note:
 
     @classmethod
     def from_pc(cls, pc: PitchClass, degree: int) -> "Note":
+        """
+        Examples
+        --------
+        >>> Note.from_pc(C, 3)
+        C3
+        """
         return Note(pc.value + (degree + 2) * 12)
 
     @classmethod
     def from_pc_at_least(cls, pc: PitchClass, ref_note: "Note") -> "Note":
+        """
+        Examples
+        --------
+        >>> Note.from_pc_at_least(D, C3)
+        D3
+        """
         d_to_ref = pc - ref_note.pc
         return ref_note + d_to_ref
 
     @classmethod
     def from_pc_at_most(cls, pc: PitchClass, ref_note: "Note") -> "Note":
+        """
+        Examples
+        --------
+        >>> Note.from_pc_at_most(C, D3)
+        C3
+        """
         d_to_ref = ref_note.pc - pc
         return ref_note - d_to_ref
 
     @classmethod
     def from_pc_closest_to(cls, pc: PitchClass, ref_note: "Note") -> "Note":
+        """
+        Examples
+        --------
+        >>> Note.from_pc_closest_to(C, E4)
+        C4
+        """
         at_least = cls.from_pc_at_least(pc, ref_note)
         at_most = cls.from_pc_at_most(pc, ref_note)
         return min(at_least, at_most, key=lambda note: abs(note - ref_note))
 
     @classmethod
     def from_pcs_closest_to(cls, pcs: list[PitchClass], ref_note: "Note") -> "Note":
+        """Creates the `Note` with a `PitchClass` in `pcs` that is closest to `ref_note`."""
         options: list[Note] = []
         for pc in pcs:
             at_least = cls.from_pc_at_least(pc, ref_note)
@@ -44,12 +71,19 @@ class Note:
 
     @classmethod
     def from_str(cls, s: str) -> "Note":
+        """
+        Examples
+        --------
+        >>> Note.from_str("C3")
+        C3
+        """
         letters = s[:-1]
         number = int(s[-1])
         return cls.from_pc(PitchClass.from_str(letters), number)
 
     @classmethod
     def from_freq(cls, freq: float) -> "Note":
+        """Creates the note whose frequency is closest to `freq`."""
         return Note(round(log(freq / FREQ_ROOT, 2) * 12))
 
     def __str__(self) -> str:
@@ -58,14 +92,34 @@ class Note:
     def __repr__(self) -> str:
         return str(self)
 
-    def __add__(self, other: int) -> "Note":
-        return Note(self.value + other)
+    def __add__(self, interval: int) -> "Note":
+        """
+        Examples
+        --------
+        >>> C4 + 2
+        D4
+        """
+        return Note(self.value + interval)
 
     @overload
-    def __sub__(self, other: "Note") -> int: ...
+    def __sub__(self, other: "Note") -> int:
+        """
+        Examples
+        --------
+        >>> D4 - C4
+        2
+        """
+        ...
 
     @overload
-    def __sub__(self, other: int) -> "Note": ...
+    def __sub__(self, other: int) -> "Note":
+        """
+        Examples
+        --------
+        >>> D4 - 2
+        C4
+        """
+        ...
 
     def __sub__(self, other: "Note | int") -> "Note | int":
         if isinstance(other, Note):

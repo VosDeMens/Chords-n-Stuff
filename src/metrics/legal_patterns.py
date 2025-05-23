@@ -6,6 +6,29 @@ from src.voicing import Voicing
 
 
 class LegalPatterns(Metric):
+    """Concerned with which patterns are allowed.
+
+    Attributes
+    ----------
+    scored_legal_patterns : list[tuple[Pattern, float]]
+        A list of legal patterns and their scores (sorted).
+
+    optimise_pc_spread : bool
+        Whether to enforce that the `Note`s are spread over `PitchClass`es
+        of the `CumPattern` evenly.
+
+    Enforces
+    --------
+    - Only legal patterns used.
+    if optimise_pc_spread:
+        - Even spread of `Note`a over `PitchClass`es, e.g. twice a C, twice an E, one G
+        for a major pattern is ok, but three times a C, one E and one G isn't.
+
+    Rewards
+    -------
+    - Based on set scores (1 by default).
+    """
+
     def __init__(
         self,
         legal_patterns: Iterable[Pattern] | Iterable[tuple[Pattern, float]],

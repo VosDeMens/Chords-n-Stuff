@@ -26,11 +26,6 @@ class Combination:
             The `PitchClass` to consider 0 in `cum_pattern`.
         cum_pattern : CumPattern
             The `CumPattern` from which to create a `Combination`.
-
-        Returns
-        -------
-        Combination
-            ...
         """
         return Combination([root + interval for interval in cum_pattern], root)
 
@@ -58,16 +53,6 @@ class Combination:
         """Adds together two `Combination`s, by taking the union of the sets they represent.
 
         The new `Combination` does not have a root.
-
-        Parameters
-        ----------
-        other : Combination
-            ...
-
-        Returns
-        -------
-        Combination
-            ...
         """
         return Combination(self.pcs | other.pcs)
 

@@ -4,6 +4,25 @@ from src.voicing import Voicing
 
 
 class NoCombinationReps(Metric):
+    """Concerned with not repeating `Combination`s.
+
+    Attributes
+    ----------
+    min_lookback : int
+        How far back in history to enforce no repetitions.
+
+    max_lookback : int
+        How far back in history to reward no repetitions.
+
+    Enforces
+    --------
+    - No repetitions within the latest `min_lookback` `Voicing`s.
+
+    Rewards
+    -------
+    - No repetitions within the latest `max_lookback` `Voicing`s.
+    """
+
     def __init__(
         self, min_lookback: int = INF, max_lookback: int = INF, weight: float = 1
     ):

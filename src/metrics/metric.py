@@ -5,14 +5,43 @@ from src.voicing import Voicing
 
 
 class Metric(ABC, metaclass=TimingMeta):
+    """The blueprint of a metric used in the generation of voicing progressions.
+
+    To Implement
+    ------------
+    In order to implement `Metric`, a class needs to implement the following:
+    - `def __init__(self, ...): ...`
+
+        Within the `__init__`, `super().__init__(weight)` has to be called.
+        For a metric that doesn't score, just pass 0 into the super constructor.
+        This is required in order to enforce being explicit.
+    - `def setup(self, history: list[Voicing]) -> None: ...`
+
+        This method is called once every start of the search for a next `Voicing`.
+        It is used for any computation that can be done regardless of which individual
+        candidates we'll be considering.
+    - `def _allows_partial(self, candidate: Voicing) -> bool: ...`
+
+        This method is called during pruning.
+        It is used for filtering out partial voicings, so that we don't need to explore
+        all the ways in which we could extend that voicing.
+    - `def _allows_complete_assuming_pruned(self, candidate: Voicing) -> bool: ...`
+
+        This method is called once per completed voicing, after pruning.
+        It is used for metrics that can only determine for complete voicings
+        whether they are allowed or not, and not during pruning.
+    - `def _score_assuming_legal(self, candidate: Voicing) -> float: ...`
+
+        This method awards a score to an assumed legal voicing, which is then
+        multiplied by the metric's `weight` in pre-defined superlass logic.
+    """
+
     def __init__(self, weight: float):
         self.weight = weight
 
-    # once, start of cycle
     @abstractmethod
     def setup(self, history: list[Voicing]) -> None: ...
 
-    # note by note
     def prune(self, candidates: set[Voicing]) -> set[Voicing]:
         pruned: set[Voicing] = set()
 
@@ -59,9 +88,18 @@ class Metric(ABC, metaclass=TimingMeta):
 
 
 class GeneratingMetric(Metric, ABC):
-    # note by note
+    """The blueprint of a metric that can provide a set of partial voicings
+    based on an existing partial voicing. We need one of these in an engine
+    to create a set of candidates that other metrics can then prune.
+
+    To Implement
+    ------------
+    In order to implement `GeneratingMetric`, a class needs to implement the following:
+    - `def get_allowed(self, partial_voicing: Voicing) -> set[Voicing]: ...`
+
+        Creates a set of new (partial) candidates, based on some partial Voicing
+        that was already allowed by all relevant metrics.
+    """
+
     @abstractmethod
-    def get_allowed(self, new_voicing: Voicing) -> set[Voicing]: ...
-
-
-# TODO allemaal methods goed implementeren en super().__init__
+    def get_allowed(self, partial_voicing: Voicing) -> set[Voicing]: ...

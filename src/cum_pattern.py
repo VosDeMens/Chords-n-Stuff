@@ -7,7 +7,10 @@ from src.util import get_inner_intervals
 class CumPattern:
     """A `CumPattern` (cumulative pattern) is like a `Shape`, but all intervals are mod 12.
 
-    The concept of a major triad can be expressed by a `CumPattern`, regardless of the root and the exact shape.
+    The concept of ionian can be expressed by a `CumPattern`.
+    In contrast to a `Pattern`, a `CumPattern` distinguishes between ionian and lydian for example,
+    i.e. there's a fixed starting point. If we want to express a major triad as a `CumPattern`,
+    we could do so in three different ways.
     """
 
     def __init__(self, intervals_from_root: Iterable[int]):

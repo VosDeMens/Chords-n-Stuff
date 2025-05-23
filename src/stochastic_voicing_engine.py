@@ -6,6 +6,12 @@ from src.voicing import Voicing
 
 
 class StochasticVoicingEngine:
+    """Creates a progression of `Voicing`s based on a list of `Metric`s.
+    It iteratively picks a next `Voicing` by determining which `Voicing`s
+    are allowed by all `Metric`s, and then making a weighted random pick,
+    based on the scores provided by the `Metric`s.
+    """
+
     def __init__(
         self,
         generating_metric: GeneratingMetric,
@@ -19,6 +25,13 @@ class StochasticVoicingEngine:
         self.nr_of_notes = len(start)
 
     def get_next(self) -> Voicing | None:
+        """Picks the next `Voicing` in the progression.
+
+        Returns
+        -------
+        Voicing | None
+            The next `Voicing`, or `None` if there are no legal `Voicing`s.
+        """
         for metric in self.all_metrics:
             metric.setup(self.history)
 
@@ -54,4 +67,11 @@ class StochasticVoicingEngine:
         return next_voicing
 
     def reset(self, start: Voicing) -> None:
+        """Whipes the history of the engine, and starts over with `start`.
+
+        Parameters
+        ----------
+        start : Voicing
+            The first `Voicing` in the new history.
+        """
         self.history = [start]

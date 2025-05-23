@@ -4,8 +4,20 @@ from src.voicing import Voicing
 
 
 class WithinCombination(Metric):
-    def __init__(self, combination: Combination, weight: float = 1):
-        super().__init__(weight)
+    """Concerned with whether all `PitchClass`es in a `Voicing` are within a certain `Combination`.
+
+    Attributes
+    ----------
+    combination : Combination
+        The allowed `PitchClass`es.
+
+    Enforces
+    --------
+    - No `Note`s in a candidate have a `PitchClass` outside of `combination`.
+    """
+
+    def __init__(self, combination: Combination):
+        super().__init__(0)
         self.combination = combination
 
     def setup(self, history: list[Voicing]) -> None:

@@ -3,6 +3,13 @@ from src.voicing import Voicing
 
 
 class NoDupNotes(Metric):
+    """Concerned with just not having duplicate notes in a `Voicing`.
+
+    Enforces
+    --------
+    No duplicate notes are in a candidate (for example C3 and C3, whereas havinf both C3 and C4 is allowed).
+    """
+
     def __init__(self):
         super().__init__(0)
 

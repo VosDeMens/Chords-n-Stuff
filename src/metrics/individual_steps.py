@@ -5,6 +5,36 @@ from src.voicing import Voicing
 
 
 class IndividualSteps(GeneratingMetric):
+    """Concerned with the intervals between notes in a previous Voicing and the next.
+
+    Attributes
+    ----------
+    ref_voicing : Voicing
+        The voicing to take as a reference when determining step sizes for a candidate. Determined in `setup`.
+
+    min_step : int
+        The smallest legal interval between a note in `ref_voicing` and the corresponding note in a candidate.
+
+    max_step : int
+        The biggest legal interval between a note in `ref_voicing` and the corresponding note in a candidate.
+
+    ideal_step : float | None
+        The ideal interval between a note in `ref_voicing` and the corresponding note in a candidate.
+
+    history_index : int
+        The index in the voicing history to find `ref_voicing` at.
+
+    Enforces
+    --------
+    - All intervals between a note in `ref_voicing` and the corresponding note in a candidate
+    to be in the legal range.
+
+    Rewards
+    -------
+    - The smaller the sum of the differences between the intervals between notes in `ref_voicing`
+    and the corresponding notes in a candidate and `ideal_step`.
+    """
+
     def __init__(
         self,
         min_step: int,
@@ -57,18 +87,18 @@ class IndividualSteps(GeneratingMetric):
     def distance(cls, ref_note: Note, can_note: Note) -> float:
         return abs(can_note - ref_note)
 
-    def get_allowed(self, new_voicing: Voicing) -> set[Voicing]:
+    def get_allowed(self, partial_voicing: Voicing) -> set[Voicing]:
         if self.ref_voicing is None:
             raise NoRefVoicingException
 
-        ref_note = self.ref_voicing[len(new_voicing)]
+        ref_note = self.ref_voicing[len(partial_voicing)]
         allowed: set[Voicing] = set()
 
         for d in range(self.min_step, self.max_step + 1):
             new_note_up = ref_note + d
-            allowed.add(new_voicing + new_note_up)
+            allowed.add(partial_voicing + new_note_up)
 
             new_note_down = ref_note - d
-            allowed.add(new_voicing + new_note_down)
+            allowed.add(partial_voicing + new_note_down)
 
         return allowed

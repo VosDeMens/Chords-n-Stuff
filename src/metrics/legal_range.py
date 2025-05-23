@@ -4,6 +4,20 @@ from src.voicing import Voicing
 
 
 class LegalRange(Metric):
+    """Concerned with the allowed range of notes.
+
+    Attributes
+    ----------
+    lower_bound : Note
+        No notes can be lower than this note (but can be as low as this note).
+    upper_bound : Note
+        No notes can be higher than this note (but can be as high as this note).
+
+    Enforces
+    --------
+    - All notes in a candidate are within the legal range.
+    """
+
     def __init__(self, lower_bound: Note, upper_bound: Note):
         super().__init__(0)
         self.lower_bound = lower_bound

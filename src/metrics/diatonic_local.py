@@ -6,6 +6,28 @@ from src.voicing import Voicing
 
 
 class DiatonicLocal(Metric):
+    """Concerned with diatonicity with recent `Voicing`s.
+
+    Attributes
+    ----------
+    min_lookback : int
+        How far back in history to enforce diatonicity.
+
+    max_lookback : int
+        How far back in history to reward diatonicity.
+
+    scale_pattern : Pattern
+        Scale pattern within which to establish diatonicity.
+
+    Enforces
+    --------
+    - The union of a candidate and the latest `min_lookback` `Voicing`s fit `self.scale_pattern`.
+
+    Rewards
+    -------
+    - The more latest `Voicing`s in history we can add to this union.
+    """
+
     def __init__(
         self,
         min_lookback: int = 1,
@@ -52,3 +74,4 @@ class DiatonicLocal(Metric):
 
 
 # TODO optimise
+# TODO make sure in score diatonicity is ensured not only with individual Voicings but also with the ones in between

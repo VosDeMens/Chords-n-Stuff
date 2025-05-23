@@ -11,6 +11,25 @@ class_timings: dict[type, dict[str, float]] = defaultdict(dict[str, float])
 
 
 def timed_method(cls: type) -> Callable[[T], T]:
+    """Decorator factory that instruments a method of a class
+    to record its execution time for performance reporting.
+
+    Parameters
+    ----------
+    cls : type
+        The class the method belongs to. Used as a key in the timing report.
+
+    Returns
+    -------
+    Callable[[T], T]
+        A decorator that wraps the method and records its execution time.
+
+    Notes
+    -----
+    This is intended for use with `TimingMeta`, which applies the decorator
+    automatically to all non-special methods of a class.
+    """
+
     def decorator(method: T) -> T:
         @wraps(method)
         def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
@@ -29,13 +48,25 @@ def timed_method(cls: type) -> Callable[[T], T]:
 
 
 class TimingMeta(ABCMeta):
+    """Metaclass that automatically applies the `timed_method` decorator
+    to all callable attributes (excluding special methods) of a class.
+
+    Usage
+    -----
+    class MyClass(metaclass=TimingMeta):
+        def slow_function(self):
+            ...
+
+    After running some methods, call `report_timings()` to see durations.
+    """
+
     def __new__(
         mcs: type["TimingMeta"],
         name: str,
         bases: tuple[type, ...],
         namespace: dict[str, Any],
     ) -> type:
-        cls = super().__new__(mcs, name, bases, namespace)  # ✅ 3-arg call
+        cls = super().__new__(mcs, name, bases, namespace)
         for attr_name, attr_value in namespace.items():
             if callable(attr_value) and not attr_name.startswith("__"):
                 wrapped = timed_method(cls)(attr_value)
@@ -44,6 +75,15 @@ class TimingMeta(ABCMeta):
 
 
 def report_timings() -> None:
+    """Prints a timing report of all methods instrumented by `TimingMeta`.
+
+    Outputs
+    -------
+    - Execution time per method grouped by class
+    - Total execution time
+
+    After reporting, the stored timing data is cleared.
+    """
     print("\nTiming Report:")
     total = 0
     for cls, t in sorted(class_timings.items(), key=lambda x: -sum(x[1].values())):

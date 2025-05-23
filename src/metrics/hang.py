@@ -9,6 +9,28 @@ HANG_SMAM_NOTES: tuple[Note, list[Note]] = (D2, [A2, C3, E3, G3, C4, A3, F3, D3,
 
 
 class Hang(Metric):
+    """Concerned with playability on the hang (instrument).
+
+    Attributes
+    ----------
+    ding : Note
+        The note of the ding (middle area of the hang).
+
+    ring : list[Note]
+        The notes in the ring, ordered going around the ring, such that two notes
+        that are next to each other on the ring are next to each other in `self.ring`.
+
+    require_pair : bool
+        Requires that at least two notes are next to each other.
+
+    Enforces
+    --------
+    - All notes in a candidate to be available on the hang (self.ding and self.ring).
+
+    if require_pair:
+        - Two notes from the voicing to be playable simultaneously with one hand.
+    """
+
     def __init__(
         self,
         hang_notes: tuple[Note, list[Note]] = HANG_SMAM_NOTES,
@@ -16,7 +38,6 @@ class Hang(Metric):
     ):
         super().__init__(0)
         self.ding, self.ring = hang_notes
-        self.hang_notes = hang_notes
         self.legal_notes = LegalNotes([hang_notes[0]] + hang_notes[1])
         self.require_pair = require_pair
 
@@ -39,3 +60,7 @@ class Hang(Metric):
 
     def _score_assuming_legal(self, candidate: Voicing) -> float:
         return 0
+
+
+# TODO requires pair -> requires playability
+# (twee- noten altijd goed, drie noten -> pair, vier noten -> twee pair, vijf+ -> nee)

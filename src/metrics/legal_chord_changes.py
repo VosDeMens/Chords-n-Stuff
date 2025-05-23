@@ -6,6 +6,32 @@ from src.voicing import Voicing
 
 
 class LegalChordChanges(Metric):
+    """Concerned with which chord changes are allowed.
+
+    Attributes
+    ----------
+    scored_rules : dict[CumPattern, set[tuple[CumPattern, int, float]]]
+        Per `CumPattern` `cum`, which steps are allowed, expressed by
+            - A next `CumPattern`
+            - The interval between the 0 of `cum` and the `0` in the next
+            - The score to assign to this chord change
+
+    optimise_pc_spread : bool
+        Whether to enforce that the `Note`s are spread over `PitchClass`es
+        of the `CumPattern` evenly.
+
+    Enforces
+    --------
+    - Only legal chord changes take place.
+    if optimise_pc_spread:
+        - Even spread of `Note`a over `PitchClass`es, e.g. twice a C, twice an E, one G
+        for a major pattern is ok, but three times a C, one E and one G isn't.
+
+    Rewards
+    -------
+    - Based on set scores (1 by default).
+    """
+
     def __init__(
         self,
         rules: (

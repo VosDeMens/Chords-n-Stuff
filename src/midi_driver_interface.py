@@ -9,6 +9,7 @@ DRIVER = "IAC Driver IN"
 
 
 def panic():
+    """Sends note off events for all notes."""
     output_port = mido.open_output(DRIVER)  # type: ignore
     for note in range(0, 90):
         output_port.send(mido.Message("note_off", note=note))  # type: ignore
@@ -16,9 +17,21 @@ def panic():
 
 
 def play_chord(chord: Voicing, duration: float = 0.4, wake_up: bool = True):
+    """Sends a chord to the MIDI driver, for its notes to be played simultaneously.
+
+    Parameters
+    ----------
+    chord : Voicing
+        The chord to play.
+    duration : float, optional
+        The time in seconds  between the note on and note off event, by default 0.4
+    wake_up : bool, optional
+        Whether to send a dummy note first, to wake up the driver, by default True
+    """
     output_port = mido.open_output(DRIVER)  # type: ignore
     if wake_up:
-        output_port.send(Message("note_on", note=0, velocity=1))  # type: ignore
+        output_port.send(Message("note_on", note=10, velocity=10))  # type: ignore
+        time.sleep(0.2)
     panic()
     for note in chord.notes:
         output_port.send(Message("note_on", note=note.value, velocity=64))  # type: ignore
@@ -33,10 +46,21 @@ def play_melody(
     durations: list[float] | None = None,
     wake_up: bool = True,
 ):
+    """Sends notes to the MIDI driver, to be played sequentially.
+
+    Parameters
+    ----------
+    chord : Voicing
+        The chord to play.
+    durations : list[float], optional
+        The time in seconds between the note on and note off events, by default 0.4 per note
+    wake_up : bool, optional
+        Whether to send a dummy note first, to wake up the driver, by default True
+    """
     output_port = mido.open_output(DRIVER)  # type: ignore
     if wake_up:
         output_port.send(Message("note_on", note=10, velocity=10))  # type: ignore
-        time.sleep(0.01)
+        time.sleep(0.2)
     panic()
     if durations is None:
         durations = [0.4] * len(notes)
@@ -48,6 +72,7 @@ def play_melody(
 
 
 def peep():
+    """Sends a high note (E5) to the driver, lasting 0.3 seconds."""
     output_port = mido.open_output(DRIVER)  # type: ignore
     output_port.send(Message("note_on", note=E5.value, velocity=80))  # type: ignore
     time.sleep(0.3)
@@ -55,6 +80,7 @@ def peep():
 
 
 def poop():
+    """Sends a low note (E2) to the driver, lasting 0.3 seconds."""
     output_port = mido.open_output(DRIVER)  # type: ignore
     output_port.send(Message("note_on", note=E2.value, velocity=80))  # type: ignore
     time.sleep(0.3)

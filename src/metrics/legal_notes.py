@@ -5,6 +5,18 @@ from src.voicing import Voicing
 
 
 class LegalNotes(Metric):
+    """Concerned with which notes are allowed.
+
+    Attributes
+    ----------
+    legal_notes : set[Note]
+        All notes need to be in this set.
+
+    Enforces
+    --------
+    - All notes in a candidate are in `legal_notes`.
+    """
+
     def __init__(self, legal_notes: Iterable[Note]):
         super().__init__(0)
         self.legal_notes = set(legal_notes)
