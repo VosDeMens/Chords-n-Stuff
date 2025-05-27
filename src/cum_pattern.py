@@ -1,6 +1,7 @@
 from typing import Iterable
 
 from src.pattern import Pattern
+from src.util import get_intervals_from_root
 
 
 class CumPattern:
@@ -16,6 +17,10 @@ class CumPattern:
         self.intervals_from_root: tuple[int, ...] = tuple(
             sorted(set([interval % 12 for interval in intervals_from_root]))
         )
+
+    @classmethod
+    def from_pattern_normal_form(cls, pattern: Pattern):
+        return CumPattern(get_intervals_from_root(pattern.normal_form))
 
     @property
     def pattern(self) -> Pattern:

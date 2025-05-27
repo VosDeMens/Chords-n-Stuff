@@ -1,9 +1,9 @@
 from functools import cache
 from typing import Iterable, Sequence
-from numpy import cumsum
 
 from src.util import (
     get_inner_intervals,
+    get_intervals_from_root,
     get_minimal_rotation,
     rotate_by,
 )
@@ -27,7 +27,7 @@ class Pattern:
     @classmethod
     def from_intervals_from_root(cls, intervals_from_root: Iterable[int]) -> "Pattern":
         self = cls.__new__(cls)
-        self.normal_form = get_normal_form(intervals_from_root)
+        self.normal_form = get_normal_form_from_intervals_from_root(intervals_from_root)
         return self
 
     def __eq__(self, other: object) -> bool:
@@ -95,12 +95,12 @@ def reduce_inner_intervals(inner_intervals: Sequence[int]) -> tuple[int, ...]:
     assert (
         sum(inner_intervals) % 12 == 0
     ), f"{inner_intervals = } should sum to 0 mod 12 but sum to {sum(inner_intervals)} mod 12"
-    intervals_from_roots = tuple(int(d) for d in cumsum(inner_intervals))
-    return get_normal_form(intervals_from_roots)
+    intervals_from_roots = get_intervals_from_root(inner_intervals)
+    return get_normal_form_from_intervals_from_root(intervals_from_roots)
 
 
 @cache
-def get_normal_form(
+def get_normal_form_from_intervals_from_root(
     intervals_from_root: Iterable[int],
 ) -> tuple[int, ...]:
     intervals_from_root = set(intervals_from_root)

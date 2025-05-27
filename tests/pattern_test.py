@@ -18,10 +18,14 @@ class PatternTest(unittest.TestCase):
         self.assertFalse(MINOR.pattern in DOM7.pattern)
 
     def test_get_normal_form(self):
-        self.assertTupleEqual(get_normal_form((0, 4, 7)), (3, 5, 4))
-        self.assertTupleEqual(get_normal_form((1, 4, 7)), (3, 3, 6))
-        self.assertTupleEqual(get_normal_form(()), ())
-        self.assertTupleEqual(get_normal_form((4,)), (12,))
+        self.assertTupleEqual(
+            get_normal_form_from_intervals_from_root((0, 4, 7)), (3, 5, 4)
+        )
+        self.assertTupleEqual(
+            get_normal_form_from_intervals_from_root((1, 4, 7)), (3, 3, 6)
+        )
+        self.assertTupleEqual(get_normal_form_from_intervals_from_root(()), ())
+        self.assertTupleEqual(get_normal_form_from_intervals_from_root((4,)), (12,))
 
     def test_from_intervals_from_root(self):
         self.assertEqual(Pattern.from_intervals_from_root((0, 4, 7)), MARY)

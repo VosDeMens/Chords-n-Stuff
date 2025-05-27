@@ -48,6 +48,12 @@ class Combination:
     def __len__(self) -> int:
         return len(self.pcs)
 
+    def __contains__(self, other: "Combination | PitchClass") -> bool:
+        if isinstance(other, Combination):
+            return other.pcs.issubset(self.pcs)
+        else:  # PitchClass
+            return other in self.pcs
+
     @overload
     def __add__(self, other: "Combination") -> "Combination":
         """Adds together two `Combination`s, by taking the union of the sets they represent.

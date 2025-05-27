@@ -89,9 +89,7 @@ class GuitarPractice:
             Score, based on how well the player did (between 1 and 10).
         """
         self.engine.reset(self.start_voicing)
-        print(f"{self.engine.history = }")
         self.nr_of_chords_per_round = nr_of_chords_per_round
-        print(f"{self.nr_of_chords_per_round = }")
         self.attempts_count = 0
         prev = self.start_voicing
         voicings_or_none: list[Voicing | None] = []
@@ -101,14 +99,12 @@ class GuitarPractice:
             voicings_or_none = [
                 self.engine.get_next() for _ in range(nr_of_chords_per_round - 1)
             ]
-            print(f"{prev = }")
-            print(f"{voicings_or_none = }")
             if None in voicings_or_none:
                 print("cul-de-sac")
                 break
             voicings = cast(list[Voicing], voicings_or_none)
             self.play_round([prev] + voicings, rec_time_per_chord)
-        return round(nr_of_rounds / self.attempts_count * 10) / 10
+        return round(nr_of_rounds / self.attempts_count * 100) / 10
 
     def restart(self, rec_time_per_chord: float = 2) -> float:
         """Restarts the previous exercise.
@@ -138,7 +134,7 @@ class GuitarPractice:
             voicings = [history[i + j] for j in range(0, self.nr_of_chords_per_round)]
             self.play_round(voicings, rec_time_per_chord)
             nr_of_rounds += 1
-        return round(nr_of_rounds / self.attempts_count * 10) / 10
+        return round(nr_of_rounds / self.attempts_count * 100) / 10
 
     def play_round(self, voicings: list[Voicing], sleep_duration: float):
         """Plays a single round, and replays it if the player didn't play back the chords correctly.

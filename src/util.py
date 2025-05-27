@@ -8,7 +8,7 @@ T = TypeVar("T")
 
 
 @cache
-def create_all_rotations(values: Sequence[T]) -> set[tuple[T, ...]]:
+def get_all_rotations(values: Sequence[T]) -> set[tuple[T, ...]]:
     """
     Examples
     --------
@@ -39,11 +39,11 @@ def get_minimal_rotation(values: Sequence[T]) -> tuple[T, ...]:
     >>> rotate_by((4, 1, 6))
     (1, 6, 4)
     """
-    return min(create_all_rotations(values))
+    return min(get_all_rotations(values))
 
 
 @cache
-def get_inner_intervals(dists_from_root: Sequence[int]) -> tuple[int, ...]:
+def get_inner_intervals(intervals_from_root: Sequence[int]) -> tuple[int, ...]:
     """Finds the distances between successive elements in a sequence of integers,
     ending in the distance from the last element back to the first element mod 12.
 
@@ -54,9 +54,33 @@ def get_inner_intervals(dists_from_root: Sequence[int]) -> tuple[int, ...]:
     >>> get_inner_intervals((0, 4, 7))
     (4, 3)
     """
-    if not dists_from_root:
-        return tuple()
-    return tuple(b - a for a, b in pairwise(dists_from_root))
+    if not intervals_from_root:
+        return ()
+    return tuple(b - a for a, b in pairwise(intervals_from_root))
+
+
+@cache
+def get_intervals_from_root(
+    inner_intervals: Sequence[int], d_root_to_first_note: int = 0
+) -> tuple[int, ...]:
+    """Finds the intervals from the root from the inner intervals (cumulative sum).
+
+    Examples
+    --------
+    >>> get_intervals_from_root((3, 4, 5))
+    (0, 3, 7)
+
+    >>> get_intervals_from_root((3, 4, 5), 1)
+    (1, 4, 8)
+    """
+    assert sum(inner_intervals) % 12 == 0, "inner intervals have to sum to 0 mod 12"
+
+    if not inner_intervals:
+        return ()
+    intervals_from_root: list[int] = [d_root_to_first_note]
+    for inner in inner_intervals[:-1]:
+        intervals_from_root.append(intervals_from_root[-1] + inner)
+    return tuple(intervals_from_root)
 
 
 def weighted_pick(options: dict[T, float]) -> T:

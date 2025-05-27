@@ -117,6 +117,8 @@ PC_NAMES = {
     B: "B",
 }
 
+ALL_PCS = list(sorted(PC_NAMES.keys(), key=lambda pc: pc.value))
+
 ALTERNATIVE_PC_NAMES = {
     Cs: "C#",
     Ds: "D#",

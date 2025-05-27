@@ -8,7 +8,7 @@ from src.pitch_class import *
 from src.voicing import Voicing
 
 
-class DiatonicGlobalTest(unittest.TestCase):
+class WithinCombinationTest(unittest.TestCase):
     def test_prune1(self):
         # setup
         diatonic_global = WithinCombination(Combination.from_cum(C, IONIAN))

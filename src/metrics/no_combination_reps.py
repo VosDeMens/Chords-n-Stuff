@@ -31,10 +31,12 @@ class NoCombinationReps(Metric):
         self.max_lookback = max_lookback
 
     def setup(self, history: list[Voicing]) -> None:
-        combination_history = [voicing.combination for voicing in history]
-        self.reversed_combination_history = list(reversed(combination_history))
         self.actual_min_lookback = min(self.min_lookback, len(history))
         self.actual_max_lookback = min(self.max_lookback, len(history))
+        combination_history = [
+            voicing.combination for voicing in history[-self.actual_max_lookback :]
+        ]
+        self.reversed_combination_history = list(reversed(combination_history))
         if self.actual_max_lookback != self.actual_min_lookback:
             self.score_per_extra = 1 / (
                 self.actual_max_lookback - self.actual_min_lookback

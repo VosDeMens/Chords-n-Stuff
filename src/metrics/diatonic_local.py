@@ -1,5 +1,7 @@
+from src.combination import Combination
+from src.pitch_class import ALL_PCS
 from src.constants import INF
-from src.cum_pattern import IONIAN
+from src.cum_pattern import IONIAN, CumPattern
 from src.metrics.metric import Metric
 from src.pattern import Pattern
 from src.voicing import Voicing
@@ -39,39 +41,66 @@ class DiatonicLocal(Metric):
         self.min_lookback = min_lookback
         self.max_lookback = max_lookback
         self.scale_pattern = scale_pattern
+        scale_cum_pattern_normal = CumPattern.from_pattern_normal_form(scale_pattern)
+        self.concrete_combinations: set[Combination] = {
+            Combination.from_cum(pc, scale_cum_pattern_normal) for pc in ALL_PCS
+        }
 
     def setup(self, history: list[Voicing]) -> None:
-        combination_history = [voicing.combination for voicing in history]
-        self.reversed_combination_history = list(reversed(combination_history))
-        self.actual_min_lookback = min(self.min_lookback, len(history))
-        self.actual_max_lookback = min(self.max_lookback, len(history))
-        if self.actual_max_lookback != self.actual_min_lookback:
-            self.score_per_extra = 1 / (
-                self.actual_max_lookback - self.actual_min_lookback
+        actual_min_lookback = min(self.min_lookback, len(history))
+        actual_max_lookback = min(self.max_lookback, len(history))
+        combination_history = [
+            voicing.combination for voicing in history[-actual_max_lookback:]
+        ]
+        reversed_history = list(reversed(combination_history))
+
+        union_history_min_lookback = sum(
+            reversed_history[:actual_min_lookback], Combination([])
+        )
+        self.fit_any_to_be_allowed = {
+            concrete
+            for concrete in self.concrete_combinations
+            if union_history_min_lookback in concrete
+        }
+
+        fit_any_iteratively_for_bonus_points: list[set[Combination]] = []
+        for i in range(actual_min_lookback, actual_max_lookback):
+            union_history_bonus = sum(reversed_history[: i + 1], Combination([]))
+            fit_any_iteratively_for_bonus_points.append(
+                {
+                    concrete
+                    for concrete in self.concrete_combinations
+                    if union_history_bonus in concrete
+                }
             )
 
-    def _allows_partial(self, candidate: Voicing) -> bool:
-        combination_should_match = sum(
-            self.reversed_combination_history[: self.actual_min_lookback],
-            start=candidate.combination,
+        bonus_per_fit: dict[Combination, float] = {}
+        for i, combinations in reversed(
+            list(enumerate(fit_any_iteratively_for_bonus_points))
+        ):
+            for combination in combinations:
+                if combination not in bonus_per_fit:
+                    bonus_per_fit[combination] = (i + 1) / len(
+                        fit_any_iteratively_for_bonus_points
+                    )
+
+        self.bonus_per_fit: list[tuple[Combination, float]] = list(
+            sorted(bonus_per_fit.items(), key=lambda cf: -cf[1])
         )
-        return combination_should_match.fits(self.scale_pattern)
+
+    def _allows_partial(self, candidate: Voicing) -> bool:
+        candidate_combination = candidate.combination
+        for to_fit in self.fit_any_to_be_allowed:
+            if candidate_combination in to_fit:
+                return True
+        return False
 
     def _allows_complete_assuming_pruned(self, candidate: Voicing) -> bool:
         return True
 
     def _score_assuming_legal(self, candidate: Voicing) -> float:
-        score = 0
-        for combination in self.reversed_combination_history[
-            self.actual_min_lookback : self.actual_max_lookback
-        ]:
-            combined = candidate.combination + combination
-            if not combined.fits(self.scale_pattern):
+        candidate_combination = candidate.combination
+        for to_fit, score in self.bonus_per_fit:
+            if candidate_combination in to_fit:
                 return score
-            score += self.score_per_extra
-
-        return score
-
-
-# TODO optimise
-# TODO make sure in score diatonicity is ensured not only with individual Voicings but also with the ones in between
+        return 0
