@@ -6,7 +6,7 @@ from src.util import weighted_pick
 from src.distribution import Distribution
 
 
-class StochasticDistributionEngine(metaclass=TimingMeta):
+class StochasticDistributionEngine:
     """Creates a progression of `Distribution`s based on a list of `Metric`s.
     It iteratively picks a next `Distribution` by determining which `Distribution`s
     are allowed by all `Metric`s, and then making a weighted random pick,

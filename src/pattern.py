@@ -1,3 +1,4 @@
+from functools import lru_cache
 from typing import Sequence
 
 from src.my_types import *
@@ -122,6 +123,7 @@ class Pattern:
             inner_intervals.append(12 - pos % 12)
         return inner_intervals
 
+    @lru_cache
     def __contains__(self, other: "Pattern") -> bool:
         """
         Examples

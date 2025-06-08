@@ -1,3 +1,4 @@
+from functools import lru_cache
 import numpy as np
 from typing import Iterable, Sequence, TypeVar
 import random
@@ -9,6 +10,7 @@ from src.my_types import int16, int16list, int64
 T = TypeVar("T")
 
 
+@lru_cache
 def get_all_12bit_bitmask_rotations(bitmask: int16) -> int16list:
     """Get all 12 rotations of the bitmask.
 
@@ -27,6 +29,7 @@ def get_all_12bit_bitmask_rotations(bitmask: int16) -> int16list:
     )
 
 
+@lru_cache
 def get_normal_form_12bit_bitmask(bitmask: int16) -> int16:
     """Get the lexicographically smallest rotation starting with bit 0 set.
 
@@ -109,6 +112,7 @@ def intervals_from_root_to_cum_pattern_bitmask(
     return bitmask
 
 
+@lru_cache
 def rotate_12bit_bitmask_right(bitmask: int16, n: int | int16) -> int16:
     """Rotate bitmask right by n positions within 12 bits.
 
@@ -128,6 +132,7 @@ def rotate_12bit_bitmask_right(bitmask: int16, n: int | int16) -> int16:
     return ((bitmask >> int16(n)) | (bitmask << int16(12 - n))) & MASK_12BIT
 
 
+@lru_cache
 def rotate_12bit_bitmask_left(bitmask: int16, n: int | int16) -> int16:
     """Rotate bitmask left by n positions within 12 bits.
 
@@ -147,6 +152,7 @@ def rotate_12bit_bitmask_left(bitmask: int16, n: int | int16) -> int16:
     return ((bitmask << int16(n)) | (bitmask >> int16(12 - n))) & MASK_12BIT
 
 
+@lru_cache
 def tetris_12bit_bitmask(bitmask: int16) -> int16:
     """Shift the bitmask right until the least significant set bit is at bit 0.
 
@@ -169,6 +175,7 @@ def tetris_12bit_bitmask(bitmask: int16) -> int16:
     return tetrissed_bitmask
 
 
+@lru_cache
 def tetris_64bit_bitmask(bitmask: int64) -> int64:
     """Shift the bitmask right until the least significant set bit is at bit 0.
 
@@ -190,6 +197,7 @@ def tetris_64bit_bitmask(bitmask: int64) -> int64:
     return tetrissed_bitmask
 
 
+@lru_cache
 def voicing_bitmask_to_combination_bitmask(voicing_bitmask: int64) -> int16:
     bitmask = int16(0)
 
@@ -213,6 +221,7 @@ def shape_bitmask_and_offset_to_cum_pattern_bitmask(
     return bitmask
 
 
+@lru_cache
 def get_set_bit_indices(x: int16 | int64 | int) -> list[int]:
     indices: list[int] = []
     item = x if isinstance(x, int) else x.item()
@@ -223,6 +232,7 @@ def get_set_bit_indices(x: int16 | int64 | int) -> list[int]:
     return indices
 
 
+@lru_cache
 def get_first_set_bit_index(x: int16 | int64 | int) -> int:
     item = x if isinstance(x, int) else x.item()
     lsb = item & -item

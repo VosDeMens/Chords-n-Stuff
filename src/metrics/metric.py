@@ -4,7 +4,7 @@ from src.profiler import TimingMeta
 from src.distribution import Distribution
 
 
-class Metric(ABC, metaclass=TimingMeta):
+class Metric(ABC):
     """The blueprint of a metric used in the generation of distribution progressions.
 
     To Implement
