@@ -3,15 +3,15 @@ import unittest
 from src.shape import *
 from src.metrics.diatonic_local import DiatonicLocal
 from src.note import *
-from src.voicing import Voicing
+from src.distribution import Distribution
 
 
 class DiatonicLocalTest(unittest.TestCase):
     def test_prune1(self):
         # setup
         diatonic_local = DiatonicLocal()
-        C3_MAJOR = Voicing([C3, E3, G3])
-        MAJOR_CHORDS = {C3_MAJOR + d for d in range(12)}
+        C3_MAJOR = Distribution([C3, E3, G3])
+        MAJOR_CHORDS = {C3_MAJOR >> d for d in range(12)}
 
         history = [C3_MAJOR]
         diatonic_local.setup(history)
@@ -21,18 +21,18 @@ class DiatonicLocalTest(unittest.TestCase):
         # check
         self.assertEqual(len(pruned), 5)
         self.assertIn(C3_MAJOR, pruned)
-        self.assertIn(C3_MAJOR + 2, pruned)
-        self.assertIn(C3_MAJOR + 10, pruned)
-        self.assertIn(C3_MAJOR + 5, pruned)
-        self.assertIn(C3_MAJOR + 7, pruned)
+        self.assertIn(C3_MAJOR >> 2, pruned)
+        self.assertIn(C3_MAJOR >> 10, pruned)
+        self.assertIn(C3_MAJOR >> 5, pruned)
+        self.assertIn(C3_MAJOR >> 7, pruned)
 
     def test_prune2(self):
         # setup
         diatonic_local = DiatonicLocal(2)
-        C3_MAJOR = Voicing([C3, E3, G3])
-        MAJOR_CHORDS = {C3_MAJOR + d for d in range(12)}
+        C3_MAJOR = Distribution([C3, E3, G3])
+        MAJOR_CHORDS = {C3_MAJOR >> d for d in range(12)}
 
-        history = [C3_MAJOR + 7, C3_MAJOR, C3_MAJOR + 5]
+        history = [C3_MAJOR >> 7, C3_MAJOR, C3_MAJOR >> 5]
         diatonic_local.setup(history)
 
         pruned = diatonic_local.prune(MAJOR_CHORDS)
@@ -40,20 +40,20 @@ class DiatonicLocalTest(unittest.TestCase):
         # check
         self.assertEqual(len(pruned), 4)
         self.assertIn(C3_MAJOR, pruned)
-        self.assertIn(C3_MAJOR + 10, pruned)
-        self.assertIn(C3_MAJOR + 5, pruned)
-        self.assertIn(C3_MAJOR + 7, pruned)
+        self.assertIn(C3_MAJOR >> 10, pruned)
+        self.assertIn(C3_MAJOR >> 5, pruned)
+        self.assertIn(C3_MAJOR >> 7, pruned)
 
     def test_score(self):
         # setup
         diatonic_local = DiatonicLocal(1)
-        A2_MINOR = Voicing([A2, C3, E3])
-        C3_MAJOR = Voicing([C3, E3, G3])
-        Bf2_MAJOR = C3_MAJOR - 2
-        F3_MAJOR = C3_MAJOR + 5
-        G3_MAJOR = C3_MAJOR + 7
-        Cs3_MAJOR = C3_MAJOR + 1
-        Ef3_MAJOR = C3_MAJOR + 3
+        A2_MINOR = Distribution([A2, C3, E3])
+        C3_MAJOR = Distribution([C3, E3, G3])
+        Bf2_MAJOR = C3_MAJOR << 2
+        F3_MAJOR = C3_MAJOR >> 5
+        G3_MAJOR = C3_MAJOR >> 7
+        Cs3_MAJOR = C3_MAJOR >> 1
+        Ef3_MAJOR = C3_MAJOR >> 3
 
         history = [G3_MAJOR, A2_MINOR, C3_MAJOR, F3_MAJOR]
         diatonic_local.setup(history)

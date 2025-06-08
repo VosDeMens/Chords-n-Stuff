@@ -2,7 +2,7 @@ from itertools import pairwise
 from src.metrics.legal_notes import LegalNotes
 from src.metrics.metric import Metric
 from src.note import *
-from src.voicing import Voicing
+from src.distribution import Distribution
 
 
 HANG_SMAM_NOTES: tuple[Note, list[Note]] = (D2, [A2, C3, E3, G3, C4, A3, F3, D3, Bf2])
@@ -28,7 +28,7 @@ class Hang(Metric):
     - All notes in a candidate to be available on the hang (self.ding and self.ring).
 
     if require_pair:
-        - Two notes from the voicing to be playable simultaneously with one hand.
+        - Two notes from the distribution to be playable simultaneously with one hand.
     """
 
     def __init__(
@@ -41,10 +41,10 @@ class Hang(Metric):
         self.legal_notes = LegalNotes([hang_notes[0]] + hang_notes[1])
         self.require_pair = require_pair
 
-    def setup(self, history: list[Voicing]) -> None:
+    def setup(self, history: list[Distribution]) -> None:
         pass
 
-    def has_pair(self, candidate: Voicing) -> bool:
+    def has_pair(self, candidate: Distribution) -> bool:
         if len(candidate) < 2:
             return False
         for note1, note2 in pairwise(self.ring + self.ring[:1]):
@@ -52,13 +52,13 @@ class Hang(Metric):
                 return True
         return False
 
-    def _allows_partial(self, candidate: Voicing) -> bool:
+    def _allows_partial(self, candidate: Distribution) -> bool:
         return self.legal_notes._allows_partial(candidate)  # type: ignore
 
-    def _allows_complete_assuming_pruned(self, candidate: Voicing) -> bool:
+    def _allows_complete_assuming_pruned(self, candidate: Distribution) -> bool:
         return not self.require_pair or self.has_pair(candidate)
 
-    def _score_assuming_legal(self, candidate: Voicing) -> float:
+    def _score_assuming_legal(self, candidate: Distribution) -> float:
         return 0
 
 

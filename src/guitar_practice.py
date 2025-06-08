@@ -1,5 +1,4 @@
-from time import sleep
-from typing import cast
+import asyncio
 from sounddevice import play as play_recording  # type: ignore
 
 from src.audio_io import record
@@ -13,22 +12,24 @@ from src.metrics.no_dup_notes import NoDupNotes
 from src.metrics.legal_ranges import LegalRanges
 from src.metrics.legal_patterns import LegalPatterns
 from src.pattern import *
-from src.stochastic_voicing_engine import StochasticVoicingEngine
+from src.stochastic_distribution_engine import StochasticDistributionEngine
 from src.metrics.individual_steps import IndividualSteps
-from src.voicing import Voicing
+from src.distribution import Distribution
 from src.pitch_class import *
 from src.note import *
 from src.shape import *
 from src.my_types import *
+from IPython.display import display, clear_output  # type: ignore
+import ipywidgets as widgets  # type: ignore
 
 DEFAULT_STRING_RANGES = [(G2, G3), (B2, B3), (E3, E4)]
-DEFAULT_START = Voicing([C3, F3, A3])
+DEFAULT_START = Distribution([C3, F3, A3])
 
 
 class GuitarPractice:
     """Creates exercises to practise playing by ear.
 
-    Uses a `StochasticVoicingEngine` to generate new `Voicing`s based on some default settings.
+    Uses a `StochasticDistributionEngine` to generate new `Distribution`s based on some default settings.
     """
 
     def __init__(self, string_ranges: list[tuple[Note, Note]] | None = None):
@@ -44,9 +45,9 @@ class GuitarPractice:
         self.legal_patterns = LegalPatterns([MARY, MINNY])
         self.internal_interval_range = InternalIntervalRange(3, 5)
 
-        self.start_voicing = DEFAULT_START
+        self.start_distribution = DEFAULT_START
 
-        self.engine = StochasticVoicingEngine(
+        self.engine = StochasticDistributionEngine(
             self.individual_steps,
             [
                 self.no_dup_notes,
@@ -56,16 +57,18 @@ class GuitarPractice:
                 self.no_combination_reps,
                 self.diatonic_local,
             ],
-            self.start_voicing,
+            self.start_distribution,
         )
 
         self.nr_of_chords_per_round: int | None = None
+        self.replayable: bool = False
 
-    def start(
+    async def start(
         self,
         nr_of_chords_per_round: int = 2,
         nr_of_rounds: int = 20,
         rec_time_per_chord: float = 2,
+        one_go: bool = False,
     ) -> float:
         """Starts a new exercise.
 
@@ -88,25 +91,26 @@ class GuitarPractice:
         float
             Score, based on how well the player did (between 1 and 10).
         """
-        self.engine.reset(self.start_voicing)
         self.nr_of_chords_per_round = nr_of_chords_per_round
-        self.attempts_count = 0
-        prev = self.start_voicing
-        voicings_or_none: list[Voicing | None] = []
-        for _ in range(nr_of_rounds):
-            if voicings_or_none:
-                prev = cast(Voicing, voicings_or_none[-1])
-            voicings_or_none = [
-                self.engine.get_next() for _ in range(nr_of_chords_per_round - 1)
-            ]
-            if None in voicings_or_none:
-                print("cul-de-sac")
-                break
-            voicings = cast(list[Voicing], voicings_or_none)
-            self.play_round([prev] + voicings, rec_time_per_chord)
-        return round(nr_of_rounds / self.attempts_count * 100) / 10
+        for _ in range(10):
+            self._generate_distributions(nr_of_chords_per_round, nr_of_rounds)
+            if self.replayable:
+                return await self.restart(rec_time_per_chord)
 
-    def restart(self, rec_time_per_chord: float = 2) -> float:
+        print("cul-de-sac")
+        return -1
+
+    def _generate_distributions(self, nr_of_chords_per_round: int, nr_of_rounds: int):
+        self.engine.reset(self.start_distribution)
+        for _ in range(nr_of_rounds):
+            for _ in range(nr_of_chords_per_round):
+                result = self.engine.get_next()
+                if result is None:
+                    self.replayable = False
+                    return
+        self.replayable = True
+
+    async def restart(self, rec_time_per_chord: float = 2) -> float:
         """Restarts the previous exercise.
 
         Parameters
@@ -119,24 +123,37 @@ class GuitarPractice:
         float
             Score, based on how well the player did (between 1 and 10).
         """
-        if self.nr_of_chords_per_round is None:
+        if not self.replayable or not self.nr_of_chords_per_round:
             print("Nothing to resart")
             return -1
 
         history = self.engine.history
-        self.attempts_count = 0
+        mistakes_total = 0
         nr_of_rounds = 0
         for i in range(
             0,
             len(history) - (self.nr_of_chords_per_round - 1),
             self.nr_of_chords_per_round - 1,
         ):
-            voicings = [history[i + j] for j in range(0, self.nr_of_chords_per_round)]
-            self.play_round(voicings, rec_time_per_chord)
+            distributions = [
+                history[i + j] for j in range(0, self.nr_of_chords_per_round)
+            ]
+            nr_of_mistakes = await self.play_round(distributions, rec_time_per_chord)
             nr_of_rounds += 1
-        return round(nr_of_rounds / self.attempts_count * 100) / 10
+            while nr_of_mistakes:
+                mistakes_total += nr_of_mistakes
+                nr_of_mistakes = await self.play_round(
+                    distributions, rec_time_per_chord
+                )
+                nr_of_rounds += 1
 
-    def play_round(self, voicings: list[Voicing], sleep_duration: float):
+        optimal = nr_of_rounds * self.nr_of_chords_per_round
+        optimal_minus_mistakes = optimal - mistakes_total
+        return round(optimal_minus_mistakes / optimal * 100) / 10
+
+    async def play_round(
+        self, distributions: list[Distribution], sleep_duration: float
+    ) -> int:
         """Plays a single round, and replays it if the player didn't play back the chords correctly.
 
         The player will hear:
@@ -150,43 +167,193 @@ class GuitarPractice:
 
         Parameters
         ----------
-        voicings : list[Voicing]
+        distributions : list[Distribution]
             The chords for this round.
         sleep_duration : float
             The time the player gets to play back a chord.
         """
-        self.attempts_count += 1
-        for voicing in voicings:
-            play_melody(voicing)
+        future: asyncio.Future[int] = asyncio.get_event_loop().create_future()
+
+        for distribution in distributions:
+            play_melody(distribution)
         peep()
         recordings: list[floatlist] = []
-        for i, voicing in enumerate(voicings):
+        for i, distribution in enumerate(distributions):
             recordings.append(record(sleep_duration))
-            if i < len(voicings) - 1:
+            if i < len(distributions) - 1:
                 peep()
         notes_per_recording = [
-            extract_note_sequence(recording, len(voicing), self.string_ranges)
-            for voicing, recording in zip(voicings, recordings)
+            extract_note_sequence(recording, len(distribution), self.string_ranges)
+            for distribution, recording in zip(distributions, recordings)
         ]
 
         corrects = [
-            voicing.notes == tuple(rec_notes)
-            for voicing, rec_notes in zip(voicings, notes_per_recording)
+            distribution.notes == rec_notes
+            for distribution, rec_notes in zip(distributions, notes_per_recording)
         ]
         for correct in corrects:
             if correct:
                 peep()
             else:
                 poop()
-        for voicing, recording, rec_notes, correct in zip(
-            voicings, recordings, notes_per_recording, corrects
-        ):
-            if not correct:
-                play_melody(voicing)
-                play_recording(recording, SAMPLE_RATE, blocking=True)
-                play_melody(rec_notes)
+
+        acceptances = corrects.copy()
+
+        def on_accept_click(i: int):
+            acceptances[i] = True
+            display(widgets.VBox([status_label, button_box, continue_btn]))
+
+        def on_overrule_click(i: int):
+            corrects[i] = True
+            display(widgets.VBox([status_label, button_box, continue_btn]))
+
+        def on_play_click(i: int):
+            play_melody(distributions[i])
+            play_recording(recordings[i], SAMPLE_RATE, blocking=True)
+            play_melody(notes_per_recording[i])
+
+        def on_continue_click(_):
+            nr_of_mistakes = corrects.count(False)
+            future.set_result(nr_of_mistakes)
+
+        button_box = widgets.HBox(
+            [
+                (
+                    widgets.VBox(
+                        [
+                            widgets.Button(description="Play"),
+                            widgets.Button(description="Accept"),
+                            widgets.Button(description="Overrule"),
+                        ]
+                    )
+                    if not correct and not acceptance
+                    else (
+                        widgets.Label("Correct")
+                        if correct
+                        else widgets.Label("Incorrect")
+                    )
+                )
+                for correct, acceptance in zip(corrects, acceptances)
+            ]
+        )
+        continue_btn = widgets.Button(description="Continue")
+
+        for i, vbox in enumerate(button_box.children):
+            if not isinstance(vbox, widgets.VBox):
+                continue
+            children: tuple[widgets.Button] = vbox.children  # type: ignore
+            children[0].on_click(lambda _: on_play_click(i))  # type: ignore
+            children[1].on_click(lambda _: on_accept_click(i))  # type: ignore
+            children[2].on_click(lambda _: on_overrule_click(i))  # type: ignore
+
+        continue_btn.on_click(on_continue_click)
+
+        status_label = widgets.Label()
+
+        display(widgets.VBox([status_label, button_box, continue_btn]))
+
+        result = await future
+        return result
+
+    # def play_round_in_one_go(
+    #     self, distributions: list[Distribution], sleep_duration: float
+    # ) -> None:
+    #     """Plays a single round, and replays it if the player didn't play back the chords correctly,
+    #     but the player has to play all chords in one go.
+
+    #     Parameters
+    #     ----------
+    #     distributions : list[Distribution]
+    #         The chords for this round.
+    #     sleep_duration : float
+    #         The time the player gets to play back a single chord.
+    #     """
+    #     for distribution in distributions:
+    #         play_melody(distribution)
+    #     peep()
+    #     recording = record(len(distributions) * sleep_duration)
+    #     rec_notes = extract_note_sequence(
+    #         recording,
+    #         sum(len(distribution) for distribution in distributions),
+    #         self.string_ranges * len(distributions),
+    #     )
+    #     target_notes = [note for distribution in distributions for note in distribution]
+
+    #     if rec_notes == target_notes:
+    #         peep()
+    #     else:
+    #         poop()
+    #         for distribution in distributions:
+    #             play_melody(distribution)
+    #         play_recording(recording, SAMPLE_RATE, blocking=True)
+    #         play_melody(rec_notes)
+    #         poop()
+    #         sleep(1)
+    #         self.play_round_in_one_go(distributions, sleep_duration)
+
+    def study_new(self) -> None: ...
+
+    def study_history(self) -> None:
+        """Goes over all the distributions in the history, and plays them back,
+        so the player can study them.
+
+        Uses interactive widgets for Jupyter notebook compatibility.
+        """
+        if not self.engine.history or not self.nr_of_chords_per_round:
+            print("No history to study")
+            poop()
+            return
+
+        self.current_round = 0
+        max_rounds = (len(self.engine.history) - 1) // (self.nr_of_chords_per_round - 1)
+
+        def get_current_distributions() -> list[Distribution]:
+            assert self.nr_of_chords_per_round, "nr_of_chords_per_round must be set"
+            start_index = self.current_round * (self.nr_of_chords_per_round - 1)
+            return [
+                self.engine.history[j]
+                for j in range(start_index, start_index + self.nr_of_chords_per_round)
+            ]
+
+        def play_current() -> None:
+            distributions = get_current_distributions()
+            for distribution in distributions:
+                play_melody(distribution)
+
+        def on_previous_click(_):
+            if self.current_round > 0:
+                self.current_round -= 1
+                update_display()
+                play_current()
+            else:
                 poop()
 
-        if False in corrects:
-            sleep(1)
-            self.play_round(voicings, sleep_duration)
+        def on_next_click(_):
+            if self.current_round < max_rounds - 1:
+                self.current_round += 1
+                update_display()
+                play_current()
+            else:
+                poop()
+
+        def on_replay_click(_):
+            play_current()
+
+        prev_btn = widgets.Button(description="Previous", button_style="info")
+        next_btn = widgets.Button(description="Next", button_style="info")
+        replay_btn = widgets.Button(description="Replay", button_style="success")
+
+        prev_btn.on_click(on_previous_click)
+        next_btn.on_click(on_next_click)
+        replay_btn.on_click(on_replay_click)
+
+        button_box = widgets.HBox([prev_btn, replay_btn, next_btn])
+        status_label = widgets.Label()
+
+        def update_display():
+            status_label.value = f"Round {self.current_round + 1} of {max_rounds}"
+
+        update_display()
+        display(widgets.VBox([status_label, button_box]))
+
+        play_current()

@@ -2,7 +2,7 @@ from typing import cast
 from src.combination import Combination
 from src.cum_pattern import CumPattern
 from src.metrics.metric import Metric
-from src.voicing import Voicing
+from src.distribution import Distribution
 
 
 class LegalChordChanges(Metric):
@@ -57,23 +57,23 @@ class LegalChordChanges(Metric):
             self.scored_rules = {}
         self.optimise_pc_spread = optimise_pc_spread
 
-    def setup(self, history: list[Voicing]) -> None:
+    def setup(self, history: list[Distribution]) -> None:
         self.allowed_combinations = self.get_allowed_combinations(history)
 
-    def _allows_partial(self, candidate: Voicing) -> bool:
+    def _allows_partial(self, candidate: Distribution) -> bool:
         for combination, _ in self.allowed_combinations.items():
             if candidate.fits(combination, self.optimise_pc_spread):
                 return True
         return False
 
-    def _allows_complete_assuming_pruned(self, candidate: Voicing) -> bool:
+    def _allows_complete_assuming_pruned(self, candidate: Distribution) -> bool:
         return True
 
-    def _score_assuming_legal(self, candidate: Voicing) -> float:
+    def _score_assuming_legal(self, candidate: Distribution) -> float:
         return self.allowed_combinations[candidate.combination]
 
     def get_allowed_combinations(
-        self, history: list[Voicing]
+        self, history: list[Distribution]
     ) -> dict[Combination, float]:
         last_combination = history[-1].combination
 

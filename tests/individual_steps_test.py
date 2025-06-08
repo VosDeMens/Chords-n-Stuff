@@ -3,16 +3,30 @@ import unittest
 from src.shape import *
 from src.metrics.individual_steps import IndividualSteps
 from src.note import *
-from src.voicing import Voicing
+from src.distribution import Distribution
 
 
 class IndividualStepsTest(unittest.TestCase):
+
+    def test_get_allowed(self):
+        # setup
+        individual_steps = IndividualSteps(0, 2, 1)
+        C3_MAJOR = Distribution([C3, E3, G3])
+
+        history = [C3_MAJOR]
+        individual_steps.setup(history)
+
+        allowed = individual_steps.get_allowed()
+
+        # check
+        self.assertEqual(len(allowed), 125)
+
     def test_prune1(self):
         # setup
         individual_steps = IndividualSteps(0, 2, 1)
-        C3_MAJOR = Voicing([C3, E3, G3])
-        F3_MAJOR = Voicing([C3, F3, A3])
-        G3_MAJOR = Voicing([G3, B3, D4])
+        C3_MAJOR = Distribution([C3, E3, G3])
+        F3_MAJOR = Distribution([C3, F3, A3])
+        G3_MAJOR = Distribution([G3, B3, D4])
 
         history = [C3_MAJOR]
         individual_steps.setup(history)
@@ -27,9 +41,9 @@ class IndividualStepsTest(unittest.TestCase):
     def test_prune2(self):
         # setup
         individual_steps = IndividualSteps(1, 2, 1)
-        C3_MAJOR = Voicing([C3, E3, G3])
-        F3_MAJOR = Voicing([C3, F3, A3])
-        G3_MAJOR = Voicing([G3, B3, D4])
+        C3_MAJOR = Distribution([C3, E3, G3])
+        F3_MAJOR = Distribution([C3, F3, A3])
+        G3_MAJOR = Distribution([G3, B3, D4])
 
         history = [C3_MAJOR]
         individual_steps.setup(history)
@@ -44,10 +58,10 @@ class IndividualStepsTest(unittest.TestCase):
     def test_score(self):
         # setup
         individual_steps = IndividualSteps(0, 3, 1)
-        C3_MAJOR = Voicing([C3, E3, G3])
-        F3_MAJOR = Voicing([C3, F3, A3])
-        G3_MAJOR = Voicing([G3, B3, D4])
-        A2_MAJOR = Voicing([A2, Cs3, E3])
+        C3_MAJOR = Distribution([C3, E3, G3])
+        F3_MAJOR = Distribution([C3, F3, A3])
+        G3_MAJOR = Distribution([G3, B3, D4])
+        A2_MAJOR = Distribution([A2, Cs3, E3])
 
         history = [C3_MAJOR]
         individual_steps.setup(history)

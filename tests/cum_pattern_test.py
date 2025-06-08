@@ -20,9 +20,9 @@ class CumPatternTest(unittest.TestCase):
         self.assertEqual(MAJOR + MINOR, CumPattern((0, 3, 4, 7)))
 
     def test_shift(self):
-        self.assertEqual(SUS2 >> 2, SUS4)
-        self.assertEqual(SUS2 << 1, SUS4)
-        self.assertEqual(SUS2 << -2, SUS4)
+        self.assertEqual(SUS2 << 7, SUS4)
+        self.assertEqual(SUS2 >> 5, SUS4)
+        self.assertEqual(SUS2 >> -7, SUS4)
 
     def test_equal(self):
         self.assertNotEqual(MAJOR, MINOR)

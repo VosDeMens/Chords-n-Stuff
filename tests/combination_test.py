@@ -12,6 +12,24 @@ class CombinationTest(unittest.TestCase):
     D_MAJOR = Combination.from_cum(D, MAJOR)
     C_MAJOR_D_MAJOR = Combination.from_cum(C, CumPattern([0, 2, 4, 6, 7, 9]))
 
+    def test_from_cum(self):
+        self.assertEqual(
+            Combination.from_cum(C, MAJOR).bitmask,
+            int16(1) << int16(0) | int16(1) << int16(4) | int16(1) << int16(7),
+        )
+        self.assertEqual(
+            Combination.from_cum(D, MAJOR).bitmask,
+            int16(1) << int16(2) | int16(1) << int16(6) | int16(1) << int16(9),
+        )
+        self.assertEqual(
+            Combination.from_cum(C, MINOR).bitmask,
+            int16(1) << int16(0) | int16(1) << int16(3) | int16(1) << int16(7),
+        )
+        self.assertEqual(
+            Combination.from_cum(D, MINOR).bitmask,
+            int16(1) << int16(2) | int16(1) << int16(5) | int16(1) << int16(9),
+        )
+
     def test_match(self):
         # create
         c = self.C_MAJOR.match(MAJOR)

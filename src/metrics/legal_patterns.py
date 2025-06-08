@@ -2,7 +2,7 @@ from typing import Iterable, cast
 from src.exceptions import WronglyAssumedLegalityException
 from src.metrics.metric import Metric
 from src.pattern import Pattern
-from src.voicing import Voicing
+from src.distribution import Distribution
 
 
 class LegalPatterns(Metric):
@@ -51,19 +51,19 @@ class LegalPatterns(Metric):
 
         self.optimise_pc_spread = optimise_pc_spread
 
-    def setup(self, history: list[Voicing]) -> None:
+    def setup(self, history: list[Distribution]) -> None:
         pass
 
-    def _allows_partial(self, candidate: Voicing) -> bool:
+    def _allows_partial(self, candidate: Distribution) -> bool:
         for legal_pattern, _ in self.scored_legal_patterns:
             if candidate.fits(legal_pattern, self.optimise_pc_spread):
                 return True
         return False
 
-    def _allows_complete_assuming_pruned(self, candidate: Voicing) -> bool:
+    def _allows_complete_assuming_pruned(self, candidate: Distribution) -> bool:
         return True
 
-    def _score_assuming_legal(self, candidate: Voicing) -> float:
+    def _score_assuming_legal(self, candidate: Distribution) -> float:
         for legal_pattern, score in self.scored_legal_patterns:
             if candidate.fits(legal_pattern, self.optimise_pc_spread):
                 return score

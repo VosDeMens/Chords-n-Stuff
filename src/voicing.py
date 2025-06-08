@@ -1,136 +1,133 @@
 from typing import Sequence
 
+from src.profiler import TimingMeta
 from src.cum_pattern import CumPattern
 from src.shape import Shape
+from src.my_types import int64
 from src.note import Note
 from src.pattern import Pattern
 from src.pitch_class import PitchClass
 from src.combination import Combination
+from src.util import (
+    get_set_bit_indices,
+    voicing_bitmask_to_combination_bitmask,
+)
 
 
 class Voicing:
     """A `Voicing` represents a set of specific `Note`s.
-    `Voicing`s are ordered and can contain duplicate notes.
+    `Voicing`s are unordered and can't contain duplicate notes.
     It is the least abstract way to represent a chord or scale.
-
-    For example these are all distinct:
-    >>> Voicing([C3, E3, G3])
-    >>> Voicing([C4, E4, G4])
-    >>> Voicing([E3, C4, G4])
-    >>> Voicing([C4, G4, E4])
     """
 
-    def __init__(self, notes: Sequence[Note], root: PitchClass | None = None) -> None:
-        self.notes = tuple(notes)
-        self.root = root
+    __slots__ = ("bitmask", "_combination", "_pattern", "_notes")
+
+    bitmask: int64
+    _combination: Combination | None
+    _pattern: Pattern | None
+    _notes: list[Note] | None
+
+    def __init__(self, notes: Sequence[Note]):
+        bitmask = int64(0)
+        for note in notes:
+            bitmask |= note.bitmask
+        self.bitmask = bitmask
+        self._combination = None
+        self._pattern = None
+        self._notes = None
+
+    @classmethod
+    def from_64bit_bitmask(cls, bitmask: int64) -> "Voicing":
+        instance = cls.__new__(cls)
+        instance.bitmask = bitmask
+        instance._combination = None
+        instance._pattern = None
+        instance._notes = None
+        return instance
 
     def __iter__(self):
         return iter(self.notes)
 
     def __len__(self):
-        return len(self.notes)
+        return self.bitmask.bit_count()
 
     def __getitem__(self, i: int) -> Note:
         return self.notes[i]
 
-    def __add__(self, other: Note | int) -> "Voicing":
-        if isinstance(other, Note):
-            return Voicing(self.notes + (other,))
-        else:  # int
-            return Voicing(tuple(note + other for note in self))
+    def __add__(self, other: "Note | Voicing") -> "Voicing":
+        bitmask = self.bitmask | other.bitmask
+        return Voicing.from_64bit_bitmask(bitmask)
 
-    def __sub__(self, other: int) -> "Voicing":
-        return self + (-other)
+    def __lshift__(self, i: int) -> "Voicing":
+        if i < 0:
+            bitmask = int64(self.bitmask << -i)
+        else:
+            bitmask = int64(self.bitmask >> i)
+        if bitmask.bit_count() != self.bitmask.bit_count():
+            raise OverflowError()
+        return Voicing.from_64bit_bitmask(bitmask)
+
+    def __rshift__(self, i: int) -> "Voicing":
+        return self << -i
 
     def __str__(self) -> str:
-        return f"Voicing(Root: {self.root}, Notes: {self.notes})"
+        return f"Voicing({self.notes})"
 
     def __repr__(self) -> str:
         return str(self)
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Voicing):
-            return False
-        return self.notes == other.notes
+        return isinstance(other, Voicing) and self.bitmask == other.bitmask
 
     def __hash__(self) -> int:
-        return hash(tuple(self.notes))
+        return int(self.bitmask)
 
     @classmethod
     def from_shape(cls, root_note: Note, shape: Shape) -> "Voicing":
-        return Voicing([root_note + interval for interval in shape], root_note.pc)
+        bitmask = shape.bitmask << (root_note.value + shape.offset)
+        if bitmask.bit_count() != shape.bitmask.bit_count():
+            raise OverflowError()
+        return Voicing.from_64bit_bitmask(bitmask)
 
-    # @classmethod
-    # def dense(cls, combination: Combination, root_degree: int = 3) -> "Voicing":
-    #     assert combination.root is not None, "Combination has to have root"
-    #     root_note = Note.from_pc(combination.root, root_degree)
-    #     notes = [Note.from_pc_at_least(pc, root_note) for pc in combination]
-    #     return Voicing(notes, combination.root)
-
-    def fits(
-        self, to_fit: Combination | Pattern, optimise_pc_spread: bool = False
-    ) -> bool:
+    def fits(self, to_fit: Combination | Pattern) -> bool:
         if isinstance(to_fit, Combination):
-            for note in self:
-                if note.pc not in to_fit:
-                    return False
-
-            if optimise_pc_spread:
-                return self.has_optimal_pc_spread(len(to_fit))
-
-            return True
+            bitmask = voicing_bitmask_to_combination_bitmask(self.bitmask)
+            return bitmask & to_fit.bitmask == bitmask
         else:  # Pattern
-            return self.combination.fits(to_fit) and (
-                not optimise_pc_spread or self.has_optimal_pc_spread(len(to_fit))
-            )
+            return self.pattern in to_fit
 
-    def match(self, cum: CumPattern) -> list[PitchClass]:
+    def match(self, cum: CumPattern) -> set[PitchClass]:
         return self.combination.match(cum)
 
     @property
     def combination(self) -> Combination:
-        return Combination([note.pc for note in self])
+        if self._combination is None:
+            self._combination = Combination.from_voicing_bitmask(self.bitmask)
+        return self._combination
 
     @property
     def shape(self) -> Shape:
-        if not self.notes:
-            return Shape([])
-
-        notes_sorted = sorted(self, key=lambda note: note.value)
-
-        if self.root:
-            root_note = Note.from_pc_at_most(self.root, notes_sorted[0])
-        else:
-            root_note = notes_sorted[0]
-
-        return Shape([note - root_note for note in notes_sorted])
+        return Shape.from_voicing_bitmask_and_root(self.bitmask)
 
     @property
     def pattern(self) -> Pattern:
-        return self.combination.pattern
-
-    @property
-    def note_count(self) -> dict[Note, int]:
-        note_count: dict[Note, int] = {}
-        for note in self:
-            if note not in note_count:
-                note_count[note] = 0
-            note_count[note] += 1
-        return note_count
+        if self._pattern is None:
+            self._pattern = Pattern.from_64bit_bitmask(self.bitmask)
+        return self._pattern
 
     @property
     def pc_count(self) -> dict[PitchClass, int]:
         pc_count: dict[PitchClass, int] = {}
-        for pc in [note.pc for note in self]:
+        for note in self:
+            pc = note.pc
             if pc not in pc_count:
                 pc_count[pc] = 0
             pc_count[pc] += 1
         return pc_count
 
-    def has_optimal_pc_spread(self, nr_of_pcs: int) -> bool:
-        occurences = self.pc_count.values()
-        if len(occurences) > nr_of_pcs:
-            raise ValueError
-        if len(occurences) < nr_of_pcs:
-            return max(occurences) == 1
-        return max(occurences) - min(occurences) <= 1
+    @property
+    def notes(self) -> list[Note]:
+        if self._notes is None:
+            set_bit_indices = get_set_bit_indices(self.bitmask)
+            self._notes = [Note(index) for index in set_bit_indices]
+        return self._notes

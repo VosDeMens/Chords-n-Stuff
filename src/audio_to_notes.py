@@ -36,7 +36,7 @@ def extract_note_sequence(
     if ranges_per_note is not None:
         assert len(ranges_per_note) == nr_of_notes
     else:
-        ranges_per_note = [(E1, E7) for _ in range(nr_of_notes)]
+        ranges_per_note = [(C0, Ef5) for _ in range(nr_of_notes)]
     n_fft = round(16384 * 2 ** round(log(SAMPLE_RATE / 44100, 2)))
     freqs: floatlist = librosa.fft_frequencies(sr=SAMPLE_RATE, n_fft=n_fft)  # type: ignore
     mask: floatlist = np.linspace(1, 0, len(freqs))

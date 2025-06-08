@@ -6,7 +6,7 @@ class IllegalCandidateException(Exception):
     pass
 
 
-class NoRefVoicingException(Exception):
+class NoRefDistributionException(Exception):
     pass
 
 
