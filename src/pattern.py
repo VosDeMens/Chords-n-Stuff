@@ -11,7 +11,7 @@ from src.util import (
 )
 
 
-class Pattern:
+class Pattern(metaclass=TimingMeta):
     """A pattern represents the essence of a chord or scale.
     It is the most abstract way to represent a chord or scale.
 

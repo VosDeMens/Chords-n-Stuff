@@ -10,7 +10,7 @@ from src.shape import Shape
 from src.voicing import Voicing
 
 
-class Distribution:
+class Distribution(metaclass=TimingMeta):
 
     __slots__ = ("notes", "_voicing", "_pc_count")
 

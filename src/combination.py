@@ -14,7 +14,7 @@ from src.util import (
 )
 
 
-class Combination:
+class Combination(metaclass=TimingMeta):
     """Represents a set of `PitchClass`es. The concept of C major can be expressed
     by a `Combination`, if the way the chord is voiced is not relevant.
     """

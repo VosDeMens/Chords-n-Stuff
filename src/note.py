@@ -9,7 +9,7 @@ from src.pitch_class import PitchClass
 from src.profiler import TimingMeta
 
 
-class Note:
+class Note(metaclass=TimingMeta):
     """A `Note` represents one specific pitch, like C4."""
 
     __slots__ = ("bitmask",)

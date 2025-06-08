@@ -12,7 +12,7 @@ from src.util import (
 )
 
 
-class CumPattern:
+class CumPattern(metaclass=TimingMeta):
     """A `CumPattern` (cumulative pattern) is like a `Shape`, but all intervals are mod 12.
 
     The concept of ionian can be expressed by a `CumPattern`.

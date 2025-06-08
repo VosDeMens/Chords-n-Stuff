@@ -14,7 +14,7 @@ from src.util import (
 )
 
 
-class Voicing:
+class Voicing(metaclass=TimingMeta):
     """A `Voicing` represents a set of specific `Note`s.
     `Voicing`s are unordered and can't contain duplicate notes.
     It is the least abstract way to represent a chord or scale.

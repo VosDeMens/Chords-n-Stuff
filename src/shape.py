@@ -8,7 +8,7 @@ from src.profiler import TimingMeta
 from src.util import get_first_set_bit_index, tetris_64bit_bitmask
 
 
-class Shape:
+class Shape(metaclass=TimingMeta):
     """A `Shape` represents a chord shape, as a `set` of intervals from an arbitrary root.
     Can't contain duplicates. CAN contain negative intervals.
     """
