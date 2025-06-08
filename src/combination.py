@@ -4,9 +4,10 @@ from typing import Iterable, overload
 from src.cum_pattern import CumPattern
 from src.pitch_class import PitchClass
 from src.pattern import Pattern
+from src.profiler import TimingMeta
 
 
-class Combination:
+class Combination(metaclass=TimingMeta):
     """Represents a set of `PitchClass`s. The concept of C major can be expressed
     by a `Combination`, if the way the chord is voiced is not relevant.
     """

@@ -1,7 +1,9 @@
 from typing import overload
 
+from src.profiler import TimingMeta
 
-class PitchClass:
+
+class PitchClass(metaclass=TimingMeta):
     """A `PitchClass` represents a class of notes that are spaced apart by octaves.
 
     The concept of C can be expressed as a `PitchClass`.

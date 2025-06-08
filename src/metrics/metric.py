@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 
-from src.profiler import TimingMeta
 from src.voicing import Voicing
 
 
-class Metric(ABC, metaclass=TimingMeta):
+class Metric(ABC):
     """The blueprint of a metric used in the generation of voicing progressions.
 
     To Implement

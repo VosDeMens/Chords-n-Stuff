@@ -4,9 +4,10 @@ from math import log
 
 from src.constants import FREQ_ROOT
 from src.pitch_class import PitchClass
+from src.profiler import TimingMeta
 
 
-class Note:
+class Note(metaclass=TimingMeta):
     """A `Note` represents one specific pitch, like C4."""
 
     def __init__(self, value: int):

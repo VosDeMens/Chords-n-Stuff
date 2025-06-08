@@ -2,9 +2,10 @@ from typing import Iterable
 
 from src.cum_pattern import CumPattern
 from src.pattern import Pattern
+from src.profiler import TimingMeta
 
 
-class Shape:
+class Shape(metaclass=TimingMeta):
     """A `Shape` represents a chord shape, as a `set` of intervals from an arbitrary root.
     Can't contain duplicates. CAN contain negative intervals.
     """

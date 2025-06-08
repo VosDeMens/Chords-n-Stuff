@@ -1,6 +1,7 @@
 from typing import Sequence
 
 from src.cum_pattern import CumPattern
+from src.profiler import TimingMeta
 from src.shape import Shape
 from src.note import Note
 from src.pattern import Pattern
@@ -8,7 +9,7 @@ from src.pitch_class import PitchClass
 from src.combination import Combination
 
 
-class Voicing:
+class Voicing(metaclass=TimingMeta):
     """A `Voicing` represents a set of specific `Note`s.
     `Voicing`s are ordered and can contain duplicate notes.
     It is the least abstract way to represent a chord or scale.

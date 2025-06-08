@@ -1,10 +1,11 @@
 from typing import Iterable
 
 from src.pattern import Pattern
+from src.profiler import TimingMeta
 from src.util import get_intervals_from_root
 
 
-class CumPattern:
+class CumPattern(metaclass=TimingMeta):
     """A `CumPattern` (cumulative pattern) is like a `Shape`, but all intervals are mod 12.
 
     The concept of ionian can be expressed by a `CumPattern`.
