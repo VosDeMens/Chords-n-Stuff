@@ -4,41 +4,77 @@ from src.util import *
 
 
 class UtilTests(unittest.TestCase):
-    def test_create_all_rotations(self):
-        self.assertSetEqual(
-            get_all_rotations((1, 2, 3)), {(1, 2, 3), (2, 3, 1), (3, 1, 2)}
-        )
-        self.assertSetEqual(
-            get_all_rotations((1, 2, 3, 4)),
-            {(1, 2, 3, 4), (2, 3, 4, 1), (3, 4, 1, 2), (4, 1, 2, 3)},
+    def test_rotate_12bit_bitmask_right(self):
+        self.assertEqual(
+            rotate_12bit_bitmask_left(int16(2048 + 512), 1), int16(1024 + 1)
         )
 
-    def test_rotate_by(self):
-        self.assertTupleEqual(rotate_by((1, 2, 3), 0), (1, 2, 3))
-        self.assertTupleEqual(rotate_by((1, 2, 3), 1), (2, 3, 1))
-        self.assertTupleEqual(rotate_by((1, 2, 3), 2), (3, 1, 2))
-        self.assertTupleEqual(rotate_by((1, 2, 3), 3), (1, 2, 3))
+    def test_tetris_12bit_bitmask(self):
+        self.assertEqual(tetris_12bit_bitmask(int16(32 + 16)), int16(2 + 1))
+        self.assertEqual(tetris_12bit_bitmask(int16(32 + 1)), int16(32 + 1))
 
-    def test_get_minimal_rotation(self):
-        self.assertTupleEqual(get_minimal_rotation((1, 2, 3)), (1, 2, 3))
-        self.assertTupleEqual(get_minimal_rotation((4, 5, 1)), (1, 4, 5))
-        self.assertTupleEqual(get_minimal_rotation((6, 5, 1)), (1, 6, 5))
-        self.assertTupleEqual(get_minimal_rotation((6, 5, 7)), (5, 7, 6))
-        self.assertTupleEqual(get_minimal_rotation((1, 3, 1, 2)), (1, 2, 1, 3))
+    def test_tetris_64bit_bitmask(self):
+        self.assertEqual(tetris_64bit_bitmask(int64(32 + 16)), int64(2 + 1))
+        self.assertEqual(tetris_64bit_bitmask(int64(32 + 1)), int64(32 + 1))
 
-    def test_get_inner_intervals(self):
-        self.assertTupleEqual(get_inner_intervals((0, 4, 7)), (4, 3))
-        self.assertTupleEqual(get_inner_intervals((0, 7, 4)), (7, -3))
-        self.assertTupleEqual(get_inner_intervals((0, 3, 6, 9)), (3, 3, 3))
-        self.assertTupleEqual(get_inner_intervals((0, 2, 4)), (2, 2))
-        self.assertTupleEqual(get_inner_intervals((0, 7, 4)), (7, -3))
-        self.assertTupleEqual(get_inner_intervals((-1, -3, 5)), (-2, 8))
-        self.assertTupleEqual(get_inner_intervals(()), ())
+    def test_get_all_12bit_bitmask_rotations(self):
+        self.assertCountEqual(
+            get_all_12bit_bitmask_rotations(int16(16 + 4)),
+            [
+                int16(4 + 1),
+                int16(4 + 1) << int16(1),
+                int16(4 + 1) << int16(2),
+                int16(4 + 1) << int16(3),
+                int16(4 + 1) << int16(4),
+                int16(4 + 1) << int16(5),
+                int16(4 + 1) << int16(6),
+                int16(4 + 1) << int16(7),
+                int16(4 + 1) << int16(8),
+                int16(4 + 1) << int16(9),
+                (int16(1) << int16(10)) + int16(1),
+                (int16(1) << int16(11)) + int16(2),
+            ],
+        )
 
-    def test_get_intervals_from_root(self):
-        self.assertEqual(get_intervals_from_root((3, 4, 5)), (0, 3, 7))
-        self.assertEqual(get_intervals_from_root((3, 4, 5), 1), (1, 4, 8))
-        self.assertEqual(get_intervals_from_root(()), ())
+    def test_get_normal_form_12bit_bitmask(self):
+        self.assertEqual(get_normal_form_12bit_bitmask(int16(64 + 16)), int16(4 + 1))
+        self.assertEqual(get_normal_form_12bit_bitmask(int16(4 + 1)), int16(4 + 1))
+        self.assertEqual(get_normal_form_12bit_bitmask(int16(1024 + 1)), int16(4 + 1))
 
-        with self.assertRaises(AssertionError):
-            get_intervals_from_root((3, 3, 3))
+    def test_inner_intervals_to_cum_pattern_bitmask(self):
+        self.assertEqual(inner_intervals_to_cum_pattern_bitmask([2, 10]), int16(4 + 1))
+        self.assertEqual(
+            inner_intervals_to_cum_pattern_bitmask([10, 2]), int16(1024 + 1)
+        )
+
+    def test_intervals_from_root_to_cum_pattern_bitmask(self):
+        self.assertEqual(
+            intervals_from_root_to_cum_pattern_bitmask([1, 3]), int16(8 + 2)
+        )
+        self.assertEqual(
+            intervals_from_root_to_cum_pattern_bitmask([0, 10]), int16(1024 + 1)
+        )
+
+    def test_shape_bitmask_to_cum_pattern_bitmask(self):
+        self.assertEqual(
+            shape_bitmask_and_offset_to_cum_pattern_bitmask(
+                int64(1 << 0) | int64(1 << 7) | int64(1 << 16), 0
+            ),
+            int64(1 << 0) | int64(1 << 4) | int64(1 << 7),
+        )
+        self.assertEqual(
+            shape_bitmask_and_offset_to_cum_pattern_bitmask(
+                int64(1 << 0) | int64(1 << 7) | int64(1 << 16), 2
+            ),
+            int64(1 << 2) | int64(1 << 6) | int64(1 << 9),
+        )
+
+    def test_get_set_bit_indices(self):
+        self.assertEqual(
+            get_set_bit_indices(int64(1 << 0) | int64(1 << 7) | int64(1 << 16)),
+            [0, 7, 16],
+        )
+
+    def test_is_12bit(self):
+        self.assertFalse(is_12bit(int16(8000)))
+        self.assertTrue(is_12bit(int16(5)))

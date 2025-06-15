@@ -1,20 +1,47 @@
-from functools import cache
 from typing import Iterable, overload
 
+from src.profiler import TimingMeta
 from src.cum_pattern import CumPattern
+from src.my_types import int16, int64
 from src.pitch_class import PitchClass
 from src.pattern import Pattern
-from src.profiler import TimingMeta
+from src.util import (
+    get_all_12bit_bitmask_rotations,
+    get_set_bit_indices,
+    is_12bit,
+    rotate_12bit_bitmask_left,
+    voicing_bitmask_to_combination_bitmask,
+)
 
 
 class Combination(metaclass=TimingMeta):
-    """Represents a set of `PitchClass`s. The concept of C major can be expressed
+    """Represents a set of `PitchClass`es. The concept of C major can be expressed
     by a `Combination`, if the way the chord is voiced is not relevant.
     """
 
-    def __init__(self, pcs: Iterable[PitchClass], root: PitchClass | None = None):
-        self.pcs = set(pcs)
-        self.root = root
+    __slots__ = ("bitmask",)
+
+    bitmask: int16
+
+    _instances: dict[int16, "Combination"] = {}
+
+    def __new__(cls, pcs: Iterable[PitchClass]) -> "Combination":
+        bitmask = int16(0)
+        for pc in pcs:
+            bitmask |= pc.bitmask
+        return cls._get_or_create(bitmask)
+
+    @classmethod
+    def _get_or_create(cls, bitmask: int16) -> "Combination":
+        assert is_12bit(bitmask), f"{bitmask = }"
+        if bitmask in cls._instances:
+            return cls._instances[bitmask]
+
+        instance = super().__new__(cls)
+        instance.bitmask = bitmask
+        cls._instances[bitmask] = instance
+
+        return instance
 
     @classmethod
     def from_cum(cls, root: PitchClass, cum_pattern: CumPattern) -> "Combination":
@@ -27,33 +54,42 @@ class Combination(metaclass=TimingMeta):
         cum_pattern : CumPattern
             The `CumPattern` from which to create a `Combination`.
         """
-        return Combination([root + interval for interval in cum_pattern], root)
+        bitmask = rotate_12bit_bitmask_left(cum_pattern.bitmask, root.value)
+        return cls._get_or_create(bitmask)
+
+    @classmethod
+    def from_voicing_bitmask(cls, voicing_bitmask: int64) -> "Combination":
+        bitmask = voicing_bitmask_to_combination_bitmask(voicing_bitmask)
+        return cls._get_or_create(bitmask)
+
+    @classmethod
+    def all_from_pattern(cls, pattern: Pattern) -> "list[Combination]":
+        all_bitmask_rotations = get_all_12bit_bitmask_rotations(pattern.bitmask)
+        return [cls._get_or_create(rotation) for rotation in all_bitmask_rotations]
 
     def __iter__(self):
         return iter(self.pcs)
 
     def __str__(self):
-        return f"Combination(Root: {self.root}, PCs: {self.pcs})"
+        return f"Combination(PCs: {self.pcs})"
 
     def __repr__(self):
         return str(self)
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Combination):
-            return False
-        return self.pcs == other.pcs
+        return isinstance(other, Combination) and self.bitmask == other.bitmask
 
     def __hash__(self) -> int:
-        return hash(tuple(sorted(self.pcs, key=lambda pc: pc.value)))
+        return int(self.bitmask)
 
     def __len__(self) -> int:
-        return len(self.pcs)
+        return self.bitmask.bit_count()
 
     def __contains__(self, other: "Combination | PitchClass") -> bool:
         if isinstance(other, Combination):
-            return other.pcs.issubset(self.pcs)
+            return other.bitmask & self.bitmask == other.bitmask
         else:  # PitchClass
-            return other in self.pcs
+            return bool((int16(1) << int16(other.value)) & self.bitmask)
 
     @overload
     def __add__(self, other: "Combination") -> "Combination":
@@ -69,12 +105,10 @@ class Combination(metaclass=TimingMeta):
         ...
 
     def __add__(self, other: "Combination | PitchClass") -> "Combination":
-        if isinstance(other, Combination):
-            return Combination(self.pcs | other.pcs)
-        else:  # Note
-            return Combination([other, *self.pcs])
+        bitmask = self.bitmask | other.bitmask
+        return Combination._get_or_create(bitmask)
 
-    def match(self, cum: CumPattern) -> list[PitchClass]:
+    def match(self, cum: CumPattern) -> set[PitchClass]:
         """Finds all of the roots from which `cum` could be built using the notes in `self`.
 
         Parameters
@@ -87,23 +121,21 @@ class Combination(metaclass=TimingMeta):
         list[PitchClass]
             All of the roots from which `cum` could be built using the notes in `self`.
         """
-        roots_for_matches: list[PitchClass] = []
+        roots_for_matches: set[PitchClass] = set()
         for pc in self.pcs:
-            for interval in cum:
-                if not pc + interval in self.pcs:
-                    break
-            else:
-                roots_for_matches.append(pc)
+            rotated = rotate_12bit_bitmask_left(cum.bitmask, pc.value)
+            if rotated & self.bitmask == rotated:
+                roots_for_matches.add(pc)
         return roots_for_matches
 
     def fits(self, pattern: Pattern) -> bool:
         return self.pattern in pattern
 
     @property
+    def pcs(self) -> set[PitchClass]:
+        set_bit_indices = get_set_bit_indices(self.bitmask)
+        return {PitchClass(index) for index in set_bit_indices}
+
+    @property
     def pattern(self) -> Pattern:
-        return _combination_to_pattern(self)
-
-
-@cache
-def _combination_to_pattern(combination: Combination) -> Pattern:
-    return Pattern.from_intervals_from_root(tuple(pc.value for pc in combination.pcs))
+        return Pattern.from_12bit_bitmask(self.bitmask)

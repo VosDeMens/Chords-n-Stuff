@@ -1,7 +1,7 @@
 from typing import Iterable
 from src.metrics.metric import Metric
 from src.note import *
-from src.voicing import Voicing
+from src.distribution import Distribution
 
 
 class LegalNotes(Metric):
@@ -21,17 +21,17 @@ class LegalNotes(Metric):
         super().__init__(0)
         self.legal_notes = set(legal_notes)
 
-    def setup(self, history: list[Voicing]) -> None:
+    def setup(self, history: list[Distribution]) -> None:
         pass
 
-    def _allows_partial(self, candidate: Voicing) -> bool:
+    def _allows_partial(self, candidate: Distribution) -> bool:
         for note in candidate:
             if note not in self.legal_notes:
                 return False
         return True
 
-    def _allows_complete_assuming_pruned(self, candidate: Voicing) -> bool:
+    def _allows_complete_assuming_pruned(self, candidate: Distribution) -> bool:
         return True
 
-    def _score_assuming_legal(self, candidate: Voicing) -> float:
+    def _score_assuming_legal(self, candidate: Distribution) -> float:
         return 0

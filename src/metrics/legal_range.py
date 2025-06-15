@@ -1,6 +1,6 @@
 from src.metrics.metric import Metric
 from src.note import Note
-from src.voicing import Voicing
+from src.distribution import Distribution
 
 
 class LegalRange(Metric):
@@ -23,14 +23,14 @@ class LegalRange(Metric):
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
 
-    def setup(self, history: list[Voicing]) -> None:
+    def setup(self, history: list[Distribution]) -> None:
         pass
 
-    def _allows_partial(self, candidate: Voicing) -> bool:
+    def _allows_partial(self, candidate: Distribution) -> bool:
         return all(self.lower_bound <= note <= self.upper_bound for note in candidate)
 
-    def _allows_complete_assuming_pruned(self, candidate: Voicing) -> bool:
+    def _allows_complete_assuming_pruned(self, candidate: Distribution) -> bool:
         return True
 
-    def _score_assuming_legal(self, candidate: Voicing) -> float:
+    def _score_assuming_legal(self, candidate: Distribution) -> float:
         return 0

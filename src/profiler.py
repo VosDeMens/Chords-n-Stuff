@@ -93,5 +93,7 @@ def report_timings() -> None:
     ):
         print(f"{cls.__name__}:")
         for k, (time, count) in sorted(t.items(), key=lambda x: -x[1][0]):
-            print(f"    {k}: {time:.6f} seconds, called {count} times")
+            print(
+                f"    {k}: {time:.6f} seconds, called {count} times. Time per call: {time/count:.8f}"
+            )
     class_timings.clear()

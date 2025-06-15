@@ -1,14 +1,13 @@
 from src.combination import Combination
-from src.pitch_class import ALL_PCS
 from src.constants import INF
-from src.cum_pattern import IONIAN, CumPattern
+from src.cum_pattern import IONIAN
 from src.metrics.metric import Metric
 from src.pattern import Pattern
-from src.voicing import Voicing
+from src.distribution import Distribution
 
 
 class DiatonicLocal(Metric):
-    """Concerned with diatonicity with recent `Voicing`s.
+    """Concerned with diatonicity with recent `Distribution`s.
 
     Attributes
     ----------
@@ -23,11 +22,11 @@ class DiatonicLocal(Metric):
 
     Enforces
     --------
-    - The union of a candidate and the latest `min_lookback` `Voicing`s fit `self.scale_pattern`.
+    - The union of a candidate and the latest `min_lookback` `Distribution`s fit `self.scale_pattern`.
 
     Rewards
     -------
-    - The more latest `Voicing`s in history we can add to this union.
+    - The more latest `Distribution`s in history we can add to this union.
     """
 
     def __init__(
@@ -40,17 +39,15 @@ class DiatonicLocal(Metric):
         super().__init__(weight)
         self.min_lookback = min_lookback
         self.max_lookback = max_lookback
-        self.scale_pattern = scale_pattern
-        scale_cum_pattern_normal = CumPattern.from_pattern_normal_form(scale_pattern)
-        self.concrete_combinations: set[Combination] = {
-            Combination.from_cum(pc, scale_cum_pattern_normal) for pc in ALL_PCS
-        }
+        self.concrete_combinations: list[Combination] = Combination.all_from_pattern(
+            scale_pattern
+        )
 
-    def setup(self, history: list[Voicing]) -> None:
+    def setup(self, history: list[Distribution]) -> None:
         actual_min_lookback = min(self.min_lookback, len(history))
         actual_max_lookback = min(self.max_lookback, len(history))
         combination_history = [
-            voicing.combination for voicing in history[-actual_max_lookback:]
+            distribution.combination for distribution in history[-actual_max_lookback:]
         ]
         reversed_history = list(reversed(combination_history))
 
@@ -88,17 +85,17 @@ class DiatonicLocal(Metric):
             sorted(bonus_per_fit.items(), key=lambda cf: -cf[1])
         )
 
-    def _allows_partial(self, candidate: Voicing) -> bool:
+    def _allows_partial(self, candidate: Distribution) -> bool:
         candidate_combination = candidate.combination
         for to_fit in self.fit_any_to_be_allowed:
             if candidate_combination in to_fit:
                 return True
         return False
 
-    def _allows_complete_assuming_pruned(self, candidate: Voicing) -> bool:
+    def _allows_complete_assuming_pruned(self, candidate: Distribution) -> bool:
         return True
 
-    def _score_assuming_legal(self, candidate: Voicing) -> float:
+    def _score_assuming_legal(self, candidate: Distribution) -> float:
         candidate_combination = candidate.combination
         for to_fit, score in self.bonus_per_fit:
             if candidate_combination in to_fit:

@@ -1,6 +1,6 @@
 from src.constants import INF
 from src.metrics.metric import Metric
-from src.voicing import Voicing
+from src.distribution import Distribution
 
 
 class NoCombinationReps(Metric):
@@ -16,11 +16,11 @@ class NoCombinationReps(Metric):
 
     Enforces
     --------
-    - No repetitions within the latest `min_lookback` `Voicing`s.
+    - No repetitions within the latest `min_lookback` `Distribution`s.
 
     Rewards
     -------
-    - No repetitions within the latest `max_lookback` `Voicing`s.
+    - No repetitions within the latest `max_lookback` `Distribution`s.
     """
 
     def __init__(
@@ -30,11 +30,12 @@ class NoCombinationReps(Metric):
         self.min_lookback = min_lookback
         self.max_lookback = max_lookback
 
-    def setup(self, history: list[Voicing]) -> None:
+    def setup(self, history: list[Distribution]) -> None:
         self.actual_min_lookback = min(self.min_lookback, len(history))
         self.actual_max_lookback = min(self.max_lookback, len(history))
         combination_history = [
-            voicing.combination for voicing in history[-self.actual_max_lookback :]
+            distribution.combination
+            for distribution in history[-self.actual_max_lookback :]
         ]
         self.reversed_combination_history = list(reversed(combination_history))
         if self.actual_max_lookback != self.actual_min_lookback:
@@ -42,16 +43,16 @@ class NoCombinationReps(Metric):
                 self.actual_max_lookback - self.actual_min_lookback
             )
 
-    def _allows_partial(self, candidate: Voicing) -> bool:
+    def _allows_partial(self, candidate: Distribution) -> bool:
         return True
 
-    def _allows_complete_assuming_pruned(self, candidate: Voicing) -> bool:
+    def _allows_complete_assuming_pruned(self, candidate: Distribution) -> bool:
         return (
             candidate.combination
             not in self.reversed_combination_history[: self.actual_min_lookback]
         )
 
-    def _score_assuming_legal(self, candidate: Voicing) -> float:
+    def _score_assuming_legal(self, candidate: Distribution) -> float:
         score = 0
         for combination in self.reversed_combination_history[
             self.actual_min_lookback : self.actual_max_lookback

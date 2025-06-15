@@ -5,15 +5,14 @@ from src.metrics.legal_chord_changes import LegalChordChanges
 from src.pitch_class import *
 from src.note import *
 from src.shape import *
-from src.voicing import Voicing
+from src.distribution import Distribution
 
-V_F = Voicing([C4, F4, A4])
-V_G = Voicing([B3, D4, G4])
-V_D = Voicing([D4, Fs4, A4])
-V_Fd = Voicing([C4, C4, F4])
-V_Fo = Voicing([C4, F4, C5])
+V_F = Distribution([C4, F4, A4])
+V_G = Distribution([B3, D4, G4])
+V_D = Distribution([D4, Fs4, A4])
+V_Fo = Distribution([C4, F4, C5])
 
-VOICINGS = {V_F, V_G, V_D, V_Fd, V_Fo}
+VOICINGS = {V_F, V_G, V_D, V_Fo}
 
 
 class LegalChordChangesTest(unittest.TestCase):
@@ -23,7 +22,7 @@ class LegalChordChangesTest(unittest.TestCase):
         chord_change_rules_1.add_rule(MAJOR, MAJOR, 5)
         chord_change_rules_1.add_rule(MAJOR, MAJOR, 7)
         chord_change_rules_1.add_rule(MINOR, MAJOR, 3)
-        history_C = [Voicing([C4, E4, G4])]
+        history_C = [Distribution([C4, E4, G4])]
         chord_change_rules_1.setup(history_C)
         F_G_ = chord_change_rules_1.prune(VOICINGS)
 
@@ -32,4 +31,4 @@ class LegalChordChangesTest(unittest.TestCase):
 
         # check
         self.assertCountEqual(F_G_, [V_F, V_G])
-        self.assertCountEqual(F_G_Fo_, [V_F, V_G, V_Fo, V_Fd])
+        self.assertCountEqual(F_G_Fo_, [V_F, V_G, V_Fo])

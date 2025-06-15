@@ -1,6 +1,12 @@
 from typing import overload
 
+from src.my_types import int16, int64
 from src.profiler import TimingMeta
+from src.util import (
+    is_12bit,
+    note_bitmask_to_pitch_class_bitmask,
+    rotate_12bit_bitmask_left,
+)
 
 
 class PitchClass(metaclass=TimingMeta):
@@ -9,8 +15,37 @@ class PitchClass(metaclass=TimingMeta):
     The concept of C can be expressed as a `PitchClass`.
     """
 
-    def __init__(self, value: int):
-        self._value = value % 12
+    __slots__ = ("bitmask",)
+
+    bitmask: int16
+
+    _instances: dict[int16, "PitchClass"] = {}
+
+    def __new__(cls, value: int | int16 | int64):
+        bitmask = int16(1) << int16(value % 12)
+        return cls._from_12bit_bitmask(bitmask)
+
+    @classmethod
+    def _from_12bit_bitmask(cls, bitmask: int16) -> "PitchClass":
+        assert is_12bit(bitmask), f"{bitmask = }"
+        assert bitmask.bit_count() == 1, f"{bitmask.bit_count() = }"
+        return cls._get_or_create(bitmask)
+
+    @classmethod
+    def _get_or_create(cls, bitmask: int16) -> "PitchClass":
+        if bitmask in cls._instances:
+            return cls._instances[bitmask]
+
+        instance = super().__new__(cls)
+        instance.bitmask = bitmask
+        cls._instances[bitmask] = instance
+
+        return instance
+
+    @classmethod
+    def from_note_bitmask(cls, note_bitmask: int64) -> "PitchClass":
+        bitmask = note_bitmask_to_pitch_class_bitmask(note_bitmask)
+        return PitchClass._from_12bit_bitmask(bitmask)
 
     @classmethod
     def from_str(cls, s: str) -> "PitchClass":
@@ -23,10 +58,6 @@ class PitchClass(metaclass=TimingMeta):
         Can't use the # symbol in variable names, but it's used in string representations.
         """
         return PC_NAMES_REV[s]
-
-    @property
-    def value(self) -> int:
-        return self._value
 
     def __str__(self) -> str:
         return PC_NAMES[self]
@@ -41,7 +72,8 @@ class PitchClass(metaclass=TimingMeta):
         >>> C + 2
         D
         """
-        return PitchClass(self._value + other)
+        bitmask = rotate_12bit_bitmask_left(self.bitmask, other)
+        return PitchClass._from_12bit_bitmask(bitmask)
 
     @overload
     def __sub__(self, other: "PitchClass") -> int:
@@ -71,19 +103,19 @@ class PitchClass(metaclass=TimingMeta):
 
     def __sub__(self, other: "PitchClass | int") -> "PitchClass | int":
         if isinstance(other, PitchClass):
-            return (self._value - other._value) % 12
-        else:  # if int
-            return PitchClass(self._value - other)
+            return (self.value - other.value) % 12
+        else:  # int
+            return PitchClass(int(self.value) - other)
 
     def __eq__(self, other: object) -> bool:
-        if isinstance(other, PitchClass):
-            return self._value == other._value
-        if isinstance(other, int):
-            return self._value == other
-        return False
+        return isinstance(other, PitchClass) and self.bitmask == other.bitmask
 
     def __hash__(self) -> int:
-        return hash(self._value)
+        return int(self.bitmask)
+
+    @property
+    def value(self) -> int16:
+        return int16(self.bitmask.item().bit_length() - 1)
 
 
 C = PitchClass(0)
@@ -119,7 +151,7 @@ PC_NAMES = {
     B: "B",
 }
 
-ALL_PCS = list(sorted(PC_NAMES.keys(), key=lambda pc: pc.value))
+ALL_PCS = list(sorted(PC_NAMES.keys(), key=lambda pc: int(pc.bitmask)))
 
 ALTERNATIVE_PC_NAMES = {
     Cs: "C#",

@@ -1,8 +1,15 @@
 from typing import Iterable
 
 from src.pattern import Pattern
+from src.my_types import int16, int64
 from src.profiler import TimingMeta
-from src.util import get_intervals_from_root
+from src.util import (
+    get_all_12bit_bitmask_rotations,
+    intervals_from_root_to_cum_pattern_bitmask,
+    is_12bit,
+    rotate_12bit_bitmask_right,
+    shape_bitmask_and_offset_to_cum_pattern_bitmask,
+)
 
 
 class CumPattern(metaclass=TimingMeta):
@@ -14,18 +21,66 @@ class CumPattern(metaclass=TimingMeta):
     we could do so in three different ways.
     """
 
+    __slots__ = ("bitmask",)
+
+    bitmask: int16
+
     def __init__(self, intervals_from_root: Iterable[int]):
-        self.intervals_from_root: tuple[int, ...] = tuple(
-            sorted(set([interval % 12 for interval in intervals_from_root]))
-        )
+        intervals_mod_12 = set(interval % 12 for interval in intervals_from_root)
+        self.bitmask = intervals_from_root_to_cum_pattern_bitmask(intervals_mod_12)
 
     @classmethod
-    def from_pattern_normal_form(cls, pattern: Pattern):
-        return CumPattern(get_intervals_from_root(pattern.normal_form))
+    def _from_12bit_bitmask(cls, bitmask: int16) -> "CumPattern":
+        """Creates a `CumPattern` from a 12-bit bitmask.
+
+        This bitmask does not need to be in normal form, but it needs
+        to represent a `CumPattern`, not a `Combination`.
+
+        Parameters
+        ----------
+        bitmask : int16
+            A 12-bit bitmask representing the cumulative pattern.
+
+        Returns
+        -------
+        CumPattern
+            The resulting `CumPattern`.
+        """
+        assert is_12bit(bitmask), f"{bitmask = }"
+
+        instance = cls.__new__(cls)
+        instance.bitmask = bitmask
+        return instance
+
+    @classmethod
+    def from_shape_bitmask_and_offset(
+        cls, shape_bitmask: int64, offset: int = 0
+    ) -> "CumPattern":
+        bitmask = shape_bitmask_and_offset_to_cum_pattern_bitmask(shape_bitmask, offset)
+        return CumPattern._from_12bit_bitmask(bitmask)
+
+    @classmethod
+    def all_from_pattern(cls, pattern: Pattern) -> "list[CumPattern]":
+        all_bitmask_rotations = get_all_12bit_bitmask_rotations(pattern.bitmask)
+        return [
+            CumPattern._from_12bit_bitmask(rotation)
+            for rotation in all_bitmask_rotations
+        ]
+
+    @property
+    def intervals_from_root(self) -> list[int]:
+        """Get the intervals from root as a sorted tuple.
+
+        Returns
+        -------
+        tuple[int, ...]
+            A sorted tuple of intervals from the root.
+        """
+        return [i for i in range(12) if self.bitmask & (int16(1) << int16(i))]
 
     @property
     def pattern(self) -> Pattern:
-        return Pattern.from_intervals_from_root(self)
+        return Pattern.from_12bit_bitmask(self.bitmask)
 
     def __add__(self, other: "int | CumPattern") -> "CumPattern":
         """Adds an individual interval, or all intervals from another `CumPattern`.
@@ -43,63 +98,36 @@ class CumPattern(metaclass=TimingMeta):
             The resulting `CumPattern`.
         """
         if isinstance(other, int):
-            return CumPattern(self.intervals_from_root + (other,))
-        else:  # if isinstance(other, CumPattern)
-            return CumPattern(self.intervals_from_root + other.intervals_from_root)
+            new_bitmask = self.bitmask | (int16(1) << int16(other % 12))
+            return CumPattern._from_12bit_bitmask(new_bitmask)
+        else:  # CumPattern
+            new_bitmask = self.bitmask | other.bitmask
+            return CumPattern._from_12bit_bitmask(new_bitmask)
 
     def __iter__(self):
         return iter(self.intervals_from_root)
 
     def __len__(self):
-        return len(self.intervals_from_root)
+        return self.bitmask.bit_count()
 
     def __str__(self):
-        return f"CumPattern({self.intervals_from_root})"
+        return f"CumPattern({list(self.intervals_from_root)})"
 
     def __repr__(self):
         return str(self)
 
-    def __rshift__(self, i: int) -> "CumPattern":
-        """Shifts the root to the right `i` steps, and recalculates the intervals.
-
-        Parameters
-        ----------
-        i : int
-            Number of steps to shift to the right.
-
-        Returns
-        -------
-        CumPattern
-            Shifted result.
-        """
-        new_root = self.intervals_from_root[i % len(self)]
-        intervals_from_root = [
-            interval - new_root for interval in self.intervals_from_root
-        ]
-        return CumPattern(intervals_from_root)
-
     def __lshift__(self, i: int) -> "CumPattern":
-        """Shifts the root to the left `i` steps, and recalculates the intervals.
+        bitmask = rotate_12bit_bitmask_right(self.bitmask, i)
+        return CumPattern._from_12bit_bitmask(bitmask)
 
-        Parameters
-        ----------
-        i : int
-            Number of steps to shift to the left.
-
-        Returns
-        -------
-        CumPattern
-            Shifted result.
-        """
-        return self >> -i
+    def __rshift__(self, i: int) -> "CumPattern":
+        return self << -i
 
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, CumPattern):
-            return False
-        return self.intervals_from_root == other.intervals_from_root
+        return isinstance(other, CumPattern) and self.bitmask == other.bitmask
 
     def __hash__(self) -> int:
-        return hash(self.intervals_from_root)
+        return int(self.bitmask)
 
 
 MAJOR = CumPattern([0, 4, 7])
@@ -149,9 +177,9 @@ M69 = M6 + 2
 m69 = m6 + 2
 
 IONIAN = CumPattern([0, 2, 4, 5, 7, 9, 11])
-DORIAN = IONIAN >> 1
-PHRYGIAN = IONIAN >> 2
-LYDIAN = IONIAN >> 3
-MIXOLYDIAN = IONIAN >> 4
-AEOLIAN = IONIAN >> 5
-LOCRIAN = IONIAN >> 6
+DORIAN = IONIAN << 2
+PHRYGIAN = IONIAN << 4
+LYDIAN = IONIAN << 5
+MIXOLYDIAN = IONIAN << 7
+AEOLIAN = IONIAN << 9
+LOCRIAN = IONIAN << 11

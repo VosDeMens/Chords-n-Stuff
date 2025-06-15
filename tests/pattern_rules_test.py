@@ -5,17 +5,17 @@ from src.metrics.legal_patterns import LegalPatterns
 from src.note import *
 from src.pattern import *
 from src.shape import Shape
-from src.voicing import Voicing
+from src.distribution import Distribution
 
 
 class PatternRulesTest(unittest.TestCase):
     def test_prune_1(self):
         # setup
         pattern_rules = LegalPatterns({MARY, MINNY})
-        C3_MAJOR = Voicing.from_shape(C3, Shape(MAJOR))
-        F3_MAJOR = Voicing.from_shape(F3, Shape(MAJOR))
-        F3_MINOR = Voicing.from_shape(F3, Shape(MINOR))
-        F3_DIM = Voicing.from_shape(F3, Shape(DIM))
+        C3_MAJOR = Distribution.from_shape_and_root(C3, Shape(MAJOR))
+        F3_MAJOR = Distribution.from_shape_and_root(F3, Shape(MAJOR))
+        F3_MINOR = Distribution.from_shape_and_root(F3, Shape(MINOR))
+        F3_DIM = Distribution.from_shape_and_root(F3, Shape(DIM))
 
         candidates = {C3_MAJOR, F3_MAJOR, F3_MINOR, F3_DIM}
         pruned = pattern_rules.prune(candidates)
@@ -29,9 +29,9 @@ class PatternRulesTest(unittest.TestCase):
     def test_prune_2(self):
         # setup
         pattern_rules = LegalPatterns({M7.pattern})
-        C3_MAJOR = Voicing.from_shape(C3, Shape(MAJOR))
-        C3_M7 = Voicing.from_shape(C3, Shape(M7))
-        C3_M9 = Voicing.from_shape(C3, Shape(M9))
+        C3_MAJOR = Distribution.from_shape_and_root(C3, Shape(MAJOR))
+        C3_M7 = Distribution.from_shape_and_root(C3, Shape(M7))
+        C3_M9 = Distribution.from_shape_and_root(C3, Shape(M9))
 
         candidates = {C3_MAJOR, C3_M7, C3_M9}
         pruned = pattern_rules.prune(candidates)
